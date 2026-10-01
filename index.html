@@ -63,6 +63,8 @@
   dialog::backdrop { background: rgba(0,0,0,.7); }
   dialog h3 { font-family: "Bebas Neue", sans-serif; font-weight: 400; font-size: 30px; margin: 0 0 10px; color: var(--amber); letter-spacing: 1px; }
   dialog .grid { display: grid; grid-template-columns: 1fr 80px 90px; gap: 10px; }
+  dialog .grid.pat { grid-template-columns: 1fr 1fr; margin-top: 10px; }
+  #fPattern { font-family: "JetBrains Mono", monospace; letter-spacing: 1px; }
   dialog label { display: flex; flex-direction: column; gap: 4px; color: var(--dim); }
   dialog textarea { width: 100%; min-height: 180px; resize: vertical; line-height: 1.5; }
   dialog .hint { color: var(--dim); line-height: 1.5; margin: 8px 0; }
@@ -117,7 +119,7 @@
     <option value="guitar">Clean guitar</option><option value="synth">Synth pad</option><option value="rock">Rock</option>
   </select></label>
   <label>PLAY <select id="pattern">
-    <option value="strum">Strum</option><option value="arp">Arpeggio</option><option value="pulse">Pulse</option>
+    <option value="song">Song pattern</option><option value="strum">Strum once</option><option value="arp">Arpeggio</option><option value="pulse">Pulse</option>
   </select></label>
   <label>BPM <input id="bpm" type="range" min="50" max="190" value="100"><span id="bpmV">100</span></label>
   <button id="drumsBtn" class="ghost">▶ DRUMS</button>
@@ -178,6 +180,12 @@
       Example: <code>Verse: Am F C G x2</code> · <code>Chorus: F G Em Am</code><br>
       Understands m, 7, maj7, m7, sus2, sus4, add9, 5, 6, 9, dim, aug and slash chords like <code>D/F#</code>.</p>
     <textarea id="fChords" placeholder="Verse: Am F C G x2&#10;Chorus: F G Em Am"></textarea>
+    <div class="grid pat">
+      <label>Strum pattern <select id="fPreset"></select></label>
+      <label>Pattern code <input id="fPattern" type="text" placeholder="D...D.U...U.D.U." spellcheck="false"></label>
+    </div>
+    <p class="hint">One character per step across one bar (16 = 16th notes, 12 = triplets): <code>D</code>/<code>U</code> strum down/up,
+      <code>d</code>/<code>u</code> soft, <code>x</code> muted chug, <code>B</code> bass note, <code>0</code>–<code>4</code> pick a string (0 = lowest), <code>.</code> rest.</p>
     <div id="parseInfo"></div>
     <div class="actions">
       <button value="cancel" class="ghost" formnovalidate>CANCEL</button>
@@ -195,7 +203,7 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 /* ───────────────────────── Songs ─────────────────────────
    Chords only (no lyrics), simplified to be playable. */
 const BUILTIN = [
-  { title: "Let Down — Radiohead", bpm: 103, beats: 4, text:
+  { title: "Let Down — Radiohead", bpm: 103, beats: 4, patternName: "Chiming 16th-note picking", pattern: "0342431203424312", text:
 `Verse: A E F#m E x2
 Chorus: D A F#m F#m D A F#m E
 Verse: A E F#m E x2
@@ -204,7 +212,7 @@ Bridge: Asus4 Asus4 A A
 Chorus: D A F#m F#m D A F#m E
 Outro: A` },
   // Guitar: Dmaj7 / D/B with capo 1 — written here at concert pitch
-  { title: "D>E>A>T>H>M>E>T>A>L — Panchiko", bpm: 88, beats: 4, text:
+  { title: "D>E>A>T>H>M>E>T>A>L — Panchiko", bpm: 88, beats: 4, patternName: "Slow, swaying strum", pattern: "D.....u.D...u...", text:
 `Intro: Ebmaj7
 Verse: Ebmaj7 Eb/C x2
 Chorus: Ebmaj7 Eb/C x2
@@ -213,33 +221,33 @@ Verse: Ebmaj7 Eb/C x2
 Chorus: Ebmaj7 Eb/C x2
 Bridge: Ebmaj7 Eb/C x4
 Outro: Ebmaj7 Eb/C x8` },
-  { title: "Creep — Radiohead", bpm: 92, text:
+  { title: "Creep — Radiohead", bpm: 92, patternName: "Ballad strum: D · DU · UDU", pattern: "D...D.U...U.D.U.", text:
 `Verse: G B C Cm x2
 Chorus: G B C Cm x2
 Verse: G B C Cm x2
 Chorus: G B C Cm x2` },
-  { title: "Let It Be — The Beatles", bpm: 72, text:
+  { title: "Let It Be — The Beatles", bpm: 72, patternName: "Piano-style: bass on 1 & 3, soft chords on the 8ths", pattern: "B.d.d.d.B.d.d.d.", text:
 `Verse: C G Am F C G F C x2
 Chorus: Am G F C C G F C
 Verse: C G Am F C G F C x2
 Chorus: Am G F C C G F C` },
-  { title: "Knockin' on Heaven's Door — Bob Dylan", bpm: 68, text:
+  { title: "Knockin' on Heaven's Door — Bob Dylan", bpm: 68, patternName: "Lazy country strum", pattern: "D...D...D.U.D.U.", text:
 `Verse: G D Am Am G D C C x2
 Chorus: G D Am Am G D C C x2` },
-  { title: "Zombie — The Cranberries", bpm: 84, text:
+  { title: "Zombie — The Cranberries", bpm: 84, patternName: "Heavy, driving strum", pattern: "D...D.dUD...D.dU", text:
 `Verse: Em C G D x4
 Chorus: Em C G D x4` },
-  { title: "Wonderwall — Oasis (no capo)", bpm: 87, text:
+  { title: "Wonderwall — Oasis (no capo)", bpm: 87, patternName: "Busy 16th-note strum", pattern: "D.D.D.DU.UD.DUDU", text:
 `Verse: Em7 G Dsus4 A7sus4 x4
 Chorus: C Em G Em x2` },
-  { title: "Riptide — Vance Joy", bpm: 102, text:
+  { title: "Riptide — Vance Joy", bpm: 102, patternName: "Bouncy ukulele strum", pattern: "D.DU.UDUD.DU.UDU", text:
 `Verse: Am G C C x4
 Chorus: Am G C C x2` },
-  { title: "Hallelujah — Leonard Cohen", bpm: 56, text:
+  { title: "Hallelujah — Leonard Cohen", bpm: 56, patternName: "Rolling 12/8 fingerpicking", pattern: "034543034543", text:
 `Verse: C Am C Am F G C G
 Verse: C F G Am F G E Am
 Chorus: F Am F C G C` },
-  { title: "Free play: I–V–vi–IV in C", bpm: 100, text: `Loop: C G Am F` },
+  { title: "Free play: I–V–vi–IV in C", bpm: 100, patternName: "Basic pop strum", pattern: "D...D.U...U.D.U.", text: `Loop: C G Am F` },
 ];
 
 const PC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
@@ -452,7 +460,7 @@ class Rig {
     src.connect(g); g.connect(this.bus);
     src.start(t);
     if (len) { g.gain.setTargetAtTime(0, t + len, len * 0.4); src.stop(t + len * 5); }
-    this.track(g, [src]);
+    return this.track(g, [src]);
   }
 
   synthPluck(midi, t, vel) {
@@ -464,7 +472,7 @@ class Rig {
     g.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
     o1.connect(lp); o2.connect(lp); lp.connect(g); g.connect(this.bus);
     o1.start(t); o2.start(t); o1.stop(t + 1); o2.stop(t + 1);
-    this.track(g, [o1, o2]);
+    return this.track(g, [o1, o2]);
   }
 
   padOn(notes, t) {
@@ -482,7 +490,32 @@ class Rig {
   }
 
   note(midi, t, vel, len = 0) {
-    if (this.sound === "synth") this.synthPluck(midi, t, vel); else this.pluck(midi, t, vel, len);
+    return this.sound === "synth" ? this.synthPluck(midi, t, vel) : this.pluck(midi, t, vel, len);
+  }
+
+  /* Song patterns: one character per step, spread over one 4-beat bar (16 chars = 16th notes,
+     12 = triplet 8ths). D/U = down/up strum, d/u = soft, x = muted chug, B = bass note,
+     0–9 = pick that chord tone (0 = lowest), . or - = rest and let ring. */
+  patStep(h, t) {
+    const ch = h.pat[h.k % h.pat.length];
+    if (ch === "D" || ch === "d") this.patStrum(h, t, 1, ch === "D" ? 1 : 0.6);
+    else if (ch === "U" || ch === "u") this.patStrum(h, t, -1, ch === "U" ? 0.8 : 0.5);
+    else if (ch === "x") this.patStrum(h, t, 1, 0.8, true);
+    else if (ch === "B") this.patPick(h, t, 0, 1);
+    else if (ch >= "0" && ch <= "9") this.patPick(h, t, +ch, 0.85);
+  }
+  patStrum(h, t, dir, vel, short = false) {
+    // a new strum damps what's still ringing, like a real hand hitting the strings
+    for (const v of [...h.ring, ...h.picked.filter(Boolean)]) this.releaseVoice(v, t, 0.025);
+    h.picked = [];
+    const notes = dir > 0 ? h.notes : h.notes.slice(1).reverse(); // upstrokes skip the bass string
+    const base = (this.sound === "rock" ? 0.4 : 0.3) * vel;
+    h.ring = notes.map((m, i) => this.note(m, t + i * (dir > 0 ? 0.012 : 0.009), base, short ? 0.1 : 0));
+  }
+  patPick(h, t, i, vel) {
+    const idx = Math.min(i, h.notes.length - 1);
+    if (h.picked[idx]) this.releaseVoice(h.picked[idx], t, 0.02); // re-picking a string stops its last note
+    h.picked[idx] = this.note(h.notes[idx], t, (idx === 0 ? 0.48 : 0.38) * vel);
   }
   strum(notes, t, short) {
     const vel = this.sound === "rock" ? 0.4 : 0.32;
@@ -495,13 +528,18 @@ class Rig {
   }
 
   // Press: start a chord. It keeps going (arp / pulse / pad) until release().
-  play(chord, pattern) {
+  play(chord, pattern, songPat = "") {
     const t = this.ctx.currentTime + 0.005;
     this.release(t);
     for (const v of this.voices) this.releaseVoice(v, t, 0.06); // lift fingers off the old chord
     const notes = this.sound === "rock" ? chord.power : chord.notes;
     const h = this.held = { notes, pattern, i: 0, pads: [], from: t + 0.12 };
-    if (pattern === "arp") this.arpNote(h, t);
+    if (pattern === "song" && songPat) {
+      // each new chord starts the pattern from beat 1
+      Object.assign(h, { pat: songPat, k: 0, t0: t, stepDur: 240 / this.bpm / songPat.length, ring: [], picked: [] });
+      this.patStep(h, t);
+      h.k = 1; h.nextT = t + h.stepDur;
+    } else if (pattern === "arp") this.arpNote(h, t);
     else this.strum(notes, t, pattern === "pulse");
     if (this.sound === "synth" && pattern !== "pulse") h.pads = this.padOn(chord.notes, t);
   }
@@ -520,11 +558,19 @@ class Rig {
     const c = this.ctx;
     if (c.state !== "running") return;
     const s16 = 60 / this.bpm / 4;
+    const hp = this.held;
+    if (hp?.pat) {
+      if (hp.nextT < c.currentTime - 0.05) { // resync after a stall instead of bursting
+        const skip = Math.ceil((c.currentTime - hp.nextT) / hp.stepDur);
+        hp.k += skip; hp.nextT += skip * hp.stepDur;
+      }
+      while (hp.nextT < c.currentTime + 0.1) { this.patStep(hp, hp.nextT); hp.k++; hp.nextT += hp.stepDur; }
+    }
     if (this.next < c.currentTime - 0.05) this.next = c.currentTime + 0.02; // resync after a stall
     while (this.next < c.currentTime + 0.1) {
       const t = this.next, s = this.step, h = this.held;
       if (this.drumsOn) this.playDrums(s, t);
-      if (h && h.pattern !== "strum" && s % 2 === 0 && t >= h.from) {
+      if (h && !h.pat && h.pattern !== "strum" && h.pattern !== "song" && s % 2 === 0 && t >= h.from) {
         if (h.pattern === "arp") this.arpNote(h, t); else this.strum(h.notes, t, true);
       }
       if (s % 4 === 0) this.beats.push({ t, down: s === 0 });
@@ -630,13 +676,18 @@ function loadSong(i) {
   $("#song").value = S.songIdx;
   $("#bpm").value = def.bpm; $("#bpmV").textContent = def.bpm;
   $("#delSong").hidden = S.songIdx < BUILTIN.length;
+  // songs with their own rhythm use it by default
+  $("#pattern option[value=song]").disabled = !def.pattern;
+  if (def.pattern) S.pattern = "song";
+  else if (S.pattern === "song") S.pattern = DEFAULT_PATTERN[S.sound];
+  $("#pattern").value = S.pattern;
   if (rig) { rig.setBpm(def.bpm); rig.prepare(seq.map(x => x.chord)); }
 }
 
 /* ───────────────────────── Actions ───────────────────────── */
 function trigger(chord) {
   ensureRig();
-  rig.play(chord, S.pattern);
+  rig.play(chord, S.pattern, S.song.pattern);
   S.held = true; S.flash = 1; S.nowName = chord.name;
   const [x0, x1] = playSide();
   for (let i = 0; i < 18; i++) {
@@ -862,11 +913,37 @@ function drawSongOrb(x0, x1, y0, y1) {
   g.lineWidth = S.held ? 3 : 2; g.stroke();
   g.textAlign = "center";
   g.font = "11px JetBrains Mono, monospace"; g.fillStyle = "rgba(243,233,220,0.5)";
-  g.fillText(S.held ? "RINGING — RELEASE, THEN PINCH" : "PINCH TO PLAY", cx, cy - r * 0.42);
+  const holdMsg = S.pattern === "song" && S.song.pattern ? "HOLD: PATTERN PLAYING" : "RINGING — RELEASE, THEN PINCH";
+  g.fillText(S.held ? holdMsg : "PINCH TO PLAY", cx, cy - r * 0.42);
   g.font = `600 ${r * 0.6}px Oswald`; g.fillStyle = S.held ? "rgba(243,233,220,0.35)" : "#f3e9dc";
   g.fillText(next, cx, cy + r * 0.25);
   g.font = "11px JetBrains Mono, monospace"; g.fillStyle = "rgba(243,233,220,0.4)";
   g.fillText("next", cx, cy + r * 0.5);
+  if (cy + r + 70 < y1 + 10) drawPatternStrip(cx, cy + r + 32, x1 - x0 - 16);
+}
+
+// The song's rhythm as a row of steps (↓ ↑ • ·), with the playing step lit up.
+const PAT_GLYPH = { D: "↓", d: "↓", U: "↑", u: "↑", x: "✕", B: "B" };
+function drawPatternStrip(cx, y, maxW) {
+  const pat = S.song?.pattern;
+  if (S.pattern !== "song" || !pat) return;
+  const n = pat.length, cell = Math.min(26, maxW / n), w = cell * n, x0 = cx - w / 2;
+  const h = rig?.held?.pat ? rig.held : null;
+  const cur = h ? Math.floor((rig.ctx.currentTime - audioLat() - h.t0) / h.stepDur) % n : -1;
+  g.textAlign = "center";
+  g.font = "10px JetBrains Mono, monospace"; g.fillStyle = "rgba(243,233,220,0.5)";
+  g.fillText(`PATTERN · ${S.song.patternName || "custom"}`, cx, y - 8);
+  for (let i = 0; i < n; i++) {
+    const x = x0 + i * cell, ch = pat[i], beat = i % (n / 4) === 0;
+    rrect(x + 1, y, cell - 2, cell * 1.15, 4);
+    g.fillStyle = i === cur ? "rgba(255,176,46,0.85)" : beat ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)";
+    g.fill();
+    const soft = ch === "d" || ch === "u";
+    const glyph = PAT_GLYPH[ch] ?? (ch >= "0" && ch <= "9" ? "•" : "·");
+    g.font = `600 ${cell * (soft ? 0.5 : 0.7)}px Oswald`;
+    g.fillStyle = i === cur ? "#0b0907" : glyph === "·" ? "rgba(243,233,220,0.25)" : soft ? "rgba(243,233,220,0.55)" : "#f3e9dc";
+    g.fillText(glyph, x + cell / 2, y + cell * 0.82);
+  }
 }
 
 function drawPads(x0, x1, y0, y1) {
@@ -969,8 +1046,8 @@ function frame(now) {
    coaching for specific songs on top. */
 const LESSON_NOTES = {
   "Let Down — Radiohead": {
-    intro: "Let Down rides a chiming, picked guitar in A major. It only uses A, E, F#m and D, plus an Asus4 in the bridge. Learn the verse loop first, because the chorus mostly swaps in D. The sound is set to Clean guitar + Arpeggio, close to the record.",
-    setup: { sound: "guitar", pattern: "arp", bright: 0.7 },
+    intro: "Let Down rides a chiming, picked guitar in A major. It only uses A, E, F#m and D, plus an Asus4 in the bridge. Learn the verse loop first, because the chorus mostly swaps in D. The sound is set to Clean guitar with the song's chiming picking pattern, close to the record.",
+    setup: { sound: "guitar", pattern: "song", bright: 0.7 },
     chords: {
       A: "Home base. The verse starts here and keeps coming back to it. Bright and settled.",
       E: "The 'lift'. In the verse it comes every second chord, between A and F#m.",
@@ -986,8 +1063,8 @@ const LESSON_NOTES = {
     full: "Verse ×2 → Chorus → Verse ×2 → Chorus → Bridge → Chorus → end on A. The orange labels above the lane warn you when a section changes.",
   },
   "D>E>A>T>H>M>E>T>A>L — Panchiko": {
-    intro: "Despite the name, this is hazy lo-fi indie, not metal. The whole song sways between two dreamy chords, Ebmaj7 and Eb/C (on a real guitar: Dmaj7 and D/B with a capo on fret 1). The chords are easy. The skill here is a slow, steady, relaxed pulse. The sound is set to Clean guitar + Arpeggio with a darker tone for that worn-tape feel.",
-    setup: { sound: "guitar", pattern: "arp", bright: 0.4 },
+    intro: "Despite the name, this is hazy lo-fi indie, not metal. The whole song sways between two dreamy chords, Ebmaj7 and Eb/C (on a real guitar: Dmaj7 and D/B with a capo on fret 1). The chords are easy. The skill here is a slow, steady, relaxed pulse. The sound is set to Clean guitar with a slow swaying strum and a darker tone for that worn-tape feel.",
+    setup: { sound: "guitar", pattern: "song", bright: 0.4 },
     chords: {
       Ebmaj7: "Eb major 7: warm and floating. This is the home of the song.",
       "Eb/C": "The same Eb chord with C underneath, so it sounds like C minor 7: deeper and a bit wistful. Only the bass note really changes.",
@@ -1298,7 +1375,8 @@ function hwIntro() {
   coach({
     step: `Speed ${Math.round(T.speed * 100)}% · ${Math.round(S.song.bpm * T.speed)} BPM`,
     text: "Chords slide toward the line. Pinch just as each one reaches it, and hold to let it ring. Pinch now to start.",
-    tip: L.id === "full" ? fullTip(S.song) : sectionTip(S.song, L),
+    tip: (L.id === "full" ? fullTip(S.song) : sectionTip(S.song, L)) +
+      (S.pattern === "song" && S.song.pattern ? ` Rhythm: ${S.song.patternName}. Keep holding the pinch through each chord so the pattern keeps playing.` : ""),
     buttons: [
       { label: "▶ Start", fn: hwStart },
       ...[0.6, 0.8, 1].map(s => ({ label: `${Math.round(s * 100)}%`, ghost: s !== T.speed, fn: () => { T.speed = s; hwIntro(); } })),
@@ -1523,6 +1601,7 @@ function drawHighway(y0, y1) {
     g.font = `600 ${laneH * 0.9}px Oswald`; g.fillStyle = "rgba(255,176,46,0.9)";
     g.fillText(String(n), W / 2, ly - 22);
   }
+  drawPatternStrip(W / 2, ly + laneH + 92, Math.min(W - 40, 440));
   const nx = hw.targets.find(t => !t.res);
   if (nx) {
     const away = Math.ceil(Math.max(0, (nx.t - now) / beatDur));
@@ -1572,7 +1651,7 @@ function setMode(v) {
 }
 $("#sound").onchange = e => {
   S.sound = e.target.value; ensureRig(); rig.setSound(S.sound);
-  S.pattern = DEFAULT_PATTERN[S.sound]; $("#pattern").value = S.pattern;
+  if (S.pattern !== "song") { S.pattern = DEFAULT_PATTERN[S.sound]; $("#pattern").value = S.pattern; }
 };
 $("#pattern").value = S.pattern;
 $("#pattern").onchange = e => { S.pattern = e.target.value; };
@@ -1588,15 +1667,40 @@ $("#lefty").onchange = e => { S.lefty = e.target.checked; };
 
 // add / delete custom songs
 const dlg = $("#addDlg");
+// strum pattern presets = every built-in song's pattern
+const PRESETS = [];
+for (const s of BUILTIN) if (s.pattern && !PRESETS.some(p => p.pattern === s.pattern)) {
+  PRESETS.push({ name: `${s.patternName} (${s.title.split(" — ")[0]})`, short: s.patternName, pattern: s.pattern });
+}
+$("#fPreset").replaceChildren(new Option("None: use the PLAY menu", ""),
+  ...PRESETS.map((p, i) => new Option(p.name, i)), new Option("Custom (type below)", "custom"));
+$("#fPreset").onchange = e => {
+  const v = e.target.value;
+  if (v === "") $("#fPattern").value = "";
+  else if (v !== "custom") $("#fPattern").value = PRESETS[+v].pattern;
+  checkParse();
+};
+$("#fPattern").oninput = () => {
+  const p = PRESETS.findIndex(x => x.pattern === cleanPattern($("#fPattern").value));
+  $("#fPreset").value = $("#fPattern").value.trim() ? (p >= 0 ? p : "custom") : "";
+  checkParse();
+};
+const cleanPattern = s => s.replace(/\s+/g, "");
+const patternOk = p => !p || (/^[DdUuxB0-9.\-]+$/.test(p) && p.length >= 4 && p.length <= 32 && /[DdUuxB0-9]/.test(p));
+
 $("#addSong").onclick = () => {
   $("#fTitle").value = ""; $("#fChords").value = ""; $("#fBpm").value = 100; $("#fBeats").value = 4;
+  $("#fPreset").value = "0"; $("#fPattern").value = PRESETS[0].pattern;
   checkParse(); dlg.showModal();
 };
 function checkParse() {
   const { seq, bad } = parseSong($("#fChords").value), info = $("#parseInfo");
-  info.className = bad.length ? "bad" : "";
-  info.textContent = bad.length ? `Didn't understand: ${bad.slice(0, 8).join(" ")}` : seq.length ? `${seq.length} chords ✓` : "";
-  $("#fSave").disabled = !seq.length;
+  const pat = cleanPattern($("#fPattern").value), patBad = !patternOk(pat);
+  info.className = bad.length || patBad ? "bad" : "";
+  info.textContent = bad.length ? `Didn't understand: ${bad.slice(0, 8).join(" ")}`
+    : patBad ? "Pattern: use only D d U u x B 0–9 . (4 to 32 steps)"
+    : seq.length ? `${seq.length} chords ✓` : "";
+  $("#fSave").disabled = !seq.length || patBad;
 }
 $("#fChords").oninput = checkParse;
 // save on submit (fires reliably and synchronously; the dialog "close" event doesn't everywhere)
@@ -1604,7 +1708,11 @@ $("#addForm").addEventListener("submit", e => {
   if (e.submitter?.value !== "save") return;
   const title = $("#fTitle").value.trim() || "My song", text = $("#fChords").value;
   if (!parseSong(text).seq.length) return;
-  custom.push({ title, bpm: clamp(+$("#fBpm").value || 100, 40, 220), beats: clamp(+$("#fBeats").value || 4, 1, 16), text });
+  const pattern = cleanPattern($("#fPattern").value);
+  if (!patternOk(pattern)) return;
+  const preset = PRESETS.find(p => p.pattern === pattern);
+  custom.push({ title, bpm: clamp(+$("#fBpm").value || 100, 40, 220), beats: clamp(+$("#fBeats").value || 4, 1, 16), text,
+    ...(pattern ? { pattern, patternName: preset ? preset.short : "Custom pattern" } : {}) });
   store.set(custom);
   fillSongs(); loadSong(allSongs().length - 1);
 });
