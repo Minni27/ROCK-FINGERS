@@ -1,0 +1,1650 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rock Fingers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Oswald:wght@500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0907;
+    --ink: #f3e9dc;
+    --dim: #9a8b7a;
+    --amber: #ffb02e;
+    --hot: #ff5a3c;
+    --panel: rgba(20, 15, 11, 0.82);
+    --line: rgba(255, 176, 46, 0.25);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); overflow: hidden;
+    font-family: "JetBrains Mono", ui-monospace, monospace; }
+  video { display: none; }
+  #stage { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+  header { position: fixed; top: 0; left: 0; right: 0; display: flex; flex-wrap: wrap; align-items: center;
+    gap: 8px 14px; padding: 10px 16px; background: linear-gradient(var(--panel), rgba(20,15,11,.4)); z-index: 2; font-size: 12px; }
+  header h1 { font-family: "Bebas Neue", sans-serif; font-weight: 400; font-size: 28px; letter-spacing: 2px; margin: 0;
+    color: var(--amber); text-shadow: 0 0 18px rgba(255, 120, 30, .55); }
+  header label { display: flex; align-items: center; gap: 6px; color: var(--dim); }
+  header input[type=range] { width: 80px; accent-color: var(--amber); }
+  header input[type=checkbox] { accent-color: var(--amber); }
+  select, input[type=text], input[type=number], textarea {
+    font: inherit; color: var(--ink); background: #18120d; border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; }
+  #song { max-width: 210px; color: var(--amber); font-weight: 600; }
+  button { font: inherit; color: var(--bg); background: var(--amber); border: 0; padding: 7px 11px; border-radius: 4px;
+    cursor: pointer; font-weight: 600; letter-spacing: .5px; }
+  button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  button.on { background: var(--hot); color: #fff; border-color: var(--hot); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+  .seg button { background: transparent; color: var(--dim); border-radius: 0; padding: 6px 10px; }
+  .seg button.sel { background: var(--amber); color: var(--bg); }
+  #status { margin-left: auto; color: var(--dim); }
+
+  footer { position: fixed; bottom: 0; left: 0; right: 0; padding: 10px 16px; font-size: 11px; color: var(--dim);
+    background: linear-gradient(transparent, var(--panel)); z-index: 2; display: flex; flex-wrap: wrap; gap: 6px 22px; }
+  footer b { color: var(--ink); font-weight: 600; }
+  kbd { border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; color: var(--ink); }
+
+  #intro { position: fixed; inset: 0; display: grid; place-items: center; z-index: 5; padding: 16px; overflow: auto;
+    background: radial-gradient(ellipse at center, rgba(40, 18, 8, .93), rgba(5, 4, 3, .98)); }
+  #intro .card { max-width: 540px; width: 100%; }
+  #intro h2 { font-family: "Bebas Neue", sans-serif; font-weight: 400; font-size: clamp(64px, 16vw, 116px); line-height: .85;
+    margin: 0 0 14px; color: var(--amber); text-shadow: 0 0 40px rgba(255, 80, 20, .6); letter-spacing: 3px; }
+  #intro p { color: var(--dim); line-height: 1.6; font-size: 13px; }
+  #intro ol { padding-left: 20px; font-size: 13px; line-height: 1.8; }
+  #intro ol b { color: var(--amber); font-weight: 600; }
+  #intro .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+  #intro button { padding: 12px 18px; font-size: 14px; }
+  #err { color: var(--hot); font-size: 12px; min-height: 1em; }
+
+  dialog { background: #140f0b; color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 20px;
+    width: min(520px, calc(100vw - 32px)); font-size: 12px; }
+  dialog::backdrop { background: rgba(0,0,0,.7); }
+  dialog h3 { font-family: "Bebas Neue", sans-serif; font-weight: 400; font-size: 30px; margin: 0 0 10px; color: var(--amber); letter-spacing: 1px; }
+  dialog .grid { display: grid; grid-template-columns: 1fr 80px 90px; gap: 10px; }
+  dialog label { display: flex; flex-direction: column; gap: 4px; color: var(--dim); }
+  dialog textarea { width: 100%; min-height: 180px; resize: vertical; line-height: 1.5; }
+  dialog .hint { color: var(--dim); line-height: 1.5; margin: 8px 0; }
+  dialog .hint code { color: var(--ink); }
+  #parseInfo { min-height: 1.4em; margin: 6px 0 12px; }
+  #parseInfo.bad { color: var(--hot); }
+  dialog .actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+  /* training */
+  #coach { position: fixed; left: 50%; transform: translateX(-50%); width: min(660px, calc(100vw - 32px)); z-index: 3;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; display: none; }
+  #coach.show { display: block; }
+  #coach .top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  #coach .top b { font-family: "Bebas Neue", sans-serif; font-weight: 400; font-size: 22px; letter-spacing: 1px; color: var(--amber); }
+  #coach .top span { color: var(--dim); font-size: 11px; }
+  #coach .top button { margin-left: auto; padding: 4px 9px; font-size: 11px; }
+  #cText { font-size: 15px; line-height: 1.5; margin: 6px 0; }
+  #cTip { font-size: 12px; color: var(--dim); line-height: 1.55; }
+  #cTip:empty, #cBtns:empty { display: none; }
+  #cBtns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  #trainMenu { position: fixed; inset: 0; z-index: 4; display: none; place-items: center; padding: 16px;
+    background: rgba(5, 4, 3, .88); overflow: auto; }
+  #trainMenu.show { display: grid; }
+  #trainMenu .card { width: min(640px, 100%); background: #140f0b; border: 1px solid var(--line); border-radius: 10px; padding: 20px; }
+  #trainMenu h3 { font-family: "Bebas Neue", sans-serif; font-weight: 400; font-size: 34px; margin: 0; color: var(--amber); letter-spacing: 1px; }
+  #trainMenu .song { font-weight: 600; margin: 2px 0 8px; }
+  #trainMenu p { color: var(--dim); font-size: 13px; line-height: 1.6; margin: 0 0 14px; }
+  #lessonList { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+  #lessonList li { display: grid; grid-template-columns: 30px 1fr auto; gap: 10px; align-items: center;
+    padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
+  #lessonList .st { font-size: 16px; text-align: center; color: var(--amber); font-weight: 600; }
+  #lessonList .t { font-weight: 600; font-size: 13px; }
+  #lessonList .d { color: var(--dim); font-size: 11px; margin-top: 2px; overflow-wrap: anywhere; }
+  #lessonList .best { color: var(--amber); font-size: 11px; margin-top: 2px; }
+  #trainMenu .foot { display: flex; justify-content: flex-end; margin-top: 14px; }
+</style>
+</head>
+<body>
+<video id="video" playsinline muted></video>
+<canvas id="stage"></canvas>
+
+<header id="hdr">
+  <h1>ROCK FINGERS</h1>
+  <select id="song" title="Song"></select>
+  <button id="trainBtn" title="Step-by-step lessons for this song">🎓 TRAIN</button>
+  <button id="addSong" class="ghost" title="Add your own song">＋ SONG</button>
+  <button id="delSong" class="ghost" hidden>DELETE</button>
+  <div class="seg" id="modeSeg" title="Song: every pinch plays the next chord. Pads: pick chords yourself.">
+    <button data-v="song" class="sel">SONG</button><button data-v="pads">PADS</button>
+  </div>
+  <label>SOUND <select id="sound">
+    <option value="guitar">Clean guitar</option><option value="synth">Synth pad</option><option value="rock">Rock</option>
+  </select></label>
+  <label>PLAY <select id="pattern">
+    <option value="strum">Strum</option><option value="arp">Arpeggio</option><option value="pulse">Pulse</option>
+  </select></label>
+  <label>BPM <input id="bpm" type="range" min="50" max="190" value="100"><span id="bpmV">100</span></label>
+  <button id="drumsBtn" class="ghost">▶ DRUMS</button>
+  <label><input id="lefty" type="checkbox"> lefty</label>
+  <span id="status">amp off</span>
+</header>
+
+<footer id="ftr">
+  <span><b>Play hand</b> pinch = play next chord (hold to let it ring)</span>
+  <span><b>Other hand</b> height = tone · pinch = go back · fist = stop</span>
+  <span><kbd>Space</kbd> next chord · <kbd>1</kbd>–<kbd>9</kbd> pads · <kbd>←</kbd> back · <kbd>R</kbd> restart · <kbd>M</kbd> mode · <kbd>X</kbd> stop · <kbd>D</kbd> drums · <kbd>T</kbd> train</span>
+</footer>
+
+<div id="intro">
+  <div class="card">
+    <h2>ROCK<br>FINGERS</h2>
+    <p>Play real songs with your hands. The app knows the chords, so you just keep time. Your webcam stays on your computer.</p>
+    <ol>
+      <li><b>Pick a song</b> at the top, or add your own by typing its chords. New to it? Hit <b>🎓 TRAIN</b> for step-by-step lessons.</li>
+      <li><b>Pinch</b> (thumb + index) with your play hand to play the next chord. Hold the pinch to keep it ringing.</li>
+      <li><b>Other hand</b>: raise it for a brighter tone, pinch to go back a chord, make a fist to stop.</li>
+      <li>Know the song? Switch to <b>PADS</b> and pick the chords yourself, with the next one glowing.</li>
+    </ol>
+    <div class="row">
+      <button id="startCam">START WITH CAMERA</button>
+      <button id="startKeys" class="ghost">KEYBOARD ONLY</button>
+    </div>
+    <p id="err"></p>
+  </div>
+</div>
+
+<div id="coach">
+  <div class="top"><b id="cTitle"></b><span id="cStep"></span><button id="cExit" class="ghost">✕ EXIT</button></div>
+  <div id="cText"></div>
+  <div id="cTip"></div>
+  <div id="cBtns"></div>
+</div>
+
+<div id="trainMenu">
+  <div class="card">
+    <h3>TRAINING</h3>
+    <div class="song" id="tmSong"></div>
+    <p id="tmIntro"></p>
+    <ul id="lessonList"></ul>
+    <div class="foot"><button id="tmClose" class="ghost">CLOSE</button></div>
+  </div>
+</div>
+
+<dialog id="addDlg">
+  <form method="dialog" id="addForm">
+    <h3>Add a song</h3>
+    <div class="grid">
+      <label>Title <input id="fTitle" type="text" placeholder="Song name — Artist" required></label>
+      <label>BPM <input id="fBpm" type="number" min="40" max="220" value="100"></label>
+      <label title="How many beats each chord lasts (4 = one bar). Used by the training play-along.">Beats/chord <input id="fBeats" type="number" min="1" max="16" value="4"></label>
+    </div>
+    <p class="hint">One section per line. Write a name and a colon, then the chords. Add <code>x2</code> to repeat a line.<br>
+      Example: <code>Verse: Am F C G x2</code> · <code>Chorus: F G Em Am</code><br>
+      Understands m, 7, maj7, m7, sus2, sus4, add9, 5, 6, 9, dim, aug and slash chords like <code>D/F#</code>.</p>
+    <textarea id="fChords" placeholder="Verse: Am F C G x2&#10;Chorus: F G Em Am"></textarea>
+    <div id="parseInfo"></div>
+    <div class="actions">
+      <button value="cancel" class="ghost" formnovalidate>CANCEL</button>
+      <button value="save" id="fSave">SAVE &amp; LOAD</button>
+    </div>
+  </form>
+</dialog>
+
+<script type="module">
+import { FilesetResolver, HandLandmarker } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+
+const $ = s => document.querySelector(s);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+/* ───────────────────────── Songs ─────────────────────────
+   Chords only (no lyrics), simplified to be playable. */
+const BUILTIN = [
+  { title: "Let Down — Radiohead", bpm: 103, beats: 4, text:
+`Verse: A E F#m E x2
+Chorus: D A F#m F#m D A F#m E
+Verse: A E F#m E x2
+Chorus: D A F#m F#m D A F#m E
+Bridge: Asus4 Asus4 A A
+Chorus: D A F#m F#m D A F#m E
+Outro: A` },
+  // Guitar: Dmaj7 / D/B with capo 1 — written here at concert pitch
+  { title: "D>E>A>T>H>M>E>T>A>L — Panchiko", bpm: 88, beats: 4, text:
+`Intro: Ebmaj7
+Verse: Ebmaj7 Eb/C x2
+Chorus: Ebmaj7 Eb/C x2
+Interlude: Ebmaj7 Eb/C x2
+Verse: Ebmaj7 Eb/C x2
+Chorus: Ebmaj7 Eb/C x2
+Bridge: Ebmaj7 Eb/C x4
+Outro: Ebmaj7 Eb/C x8` },
+  { title: "Creep — Radiohead", bpm: 92, text:
+`Verse: G B C Cm x2
+Chorus: G B C Cm x2
+Verse: G B C Cm x2
+Chorus: G B C Cm x2` },
+  { title: "Let It Be — The Beatles", bpm: 72, text:
+`Verse: C G Am F C G F C x2
+Chorus: Am G F C C G F C
+Verse: C G Am F C G F C x2
+Chorus: Am G F C C G F C` },
+  { title: "Knockin' on Heaven's Door — Bob Dylan", bpm: 68, text:
+`Verse: G D Am Am G D C C x2
+Chorus: G D Am Am G D C C x2` },
+  { title: "Zombie — The Cranberries", bpm: 84, text:
+`Verse: Em C G D x4
+Chorus: Em C G D x4` },
+  { title: "Wonderwall — Oasis (no capo)", bpm: 87, text:
+`Verse: Em7 G Dsus4 A7sus4 x4
+Chorus: C Em G Em x2` },
+  { title: "Riptide — Vance Joy", bpm: 102, text:
+`Verse: Am G C C x4
+Chorus: Am G C C x2` },
+  { title: "Hallelujah — Leonard Cohen", bpm: 56, text:
+`Verse: C Am C Am F G C G
+Verse: C F G Am F G E Am
+Chorus: F Am F C G C` },
+  { title: "Free play: I–V–vi–IV in C", bpm: 100, text: `Loop: C G Am F` },
+];
+
+const PC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+const QUAL = {
+  "": [0, 4, 7], m: [0, 3, 7], "7": [0, 4, 7, 10], maj7: [0, 4, 7, 11], m7: [0, 3, 7, 10],
+  sus2: [0, 2, 7], sus4: [0, 5, 7], sus: [0, 5, 7], "7sus4": [0, 5, 7, 10], "7sus": [0, 5, 7, 10],
+  add9: [0, 4, 7, 14], madd9: [0, 3, 7, 14], "5": [0, 7], "6": [0, 4, 7, 9], m6: [0, 3, 7, 9],
+  "9": [0, 4, 7, 10, 14], m9: [0, 3, 7, 10, 14], maj9: [0, 4, 7, 11, 14],
+  dim: [0, 3, 6], dim7: [0, 3, 6, 9], m7b5: [0, 3, 6, 10], aug: [0, 4, 8], "+": [0, 4, 8],
+};
+const acc = s => (s === "#" ? 1 : s === "b" ? -1 : 0);
+
+function parseChord(tok) {
+  const m = /^([A-G])([#b]?)([^/]*)(?:\/([A-G])([#b]?))?$/.exec(tok);
+  if (!m) return null;
+  const pc = (PC[m[1]] + acc(m[2]) + 12) % 12;
+  const q = m[3].replace(/^min/, "m").replace(/^(M7|Maj7|Δ7?)/, "maj7").replace(/^maj$/, "");
+  let ivs = QUAL[q];
+  if (!ivs) ivs = /^m(?!aj)/.test(q) ? QUAL.m : /^maj/.test(q) ? QUAL.maj7 : QUAL[""];
+  const bassPc = m[4] ? (PC[m[4]] + acc(m[5]) + 12) % 12 : null;
+
+  // Guitar-ish voicing: bass in E2–D#3, chord tones an octave up, plus a high root for shimmer
+  const low = 40 + ((pc - 4 + 12) % 12);
+  const bass = bassPc == null ? low : 40 + ((bassPc - 4 + 12) % 12);
+  const ups = ivs.map(iv => low + 12 + iv);
+  if (ups.length < 4) ups.push(low + 24);
+  const notes = [...new Set([bass, ...ups])].sort((a, b) => a - b).slice(0, 6);
+  return { name: tok, notes, power: [low, low + 7, low + 12] };
+}
+
+function parseSong(text) {
+  const seq = [], bad = [];
+  let section = "";
+  for (const raw of text.split("\n")) {
+    let line = raw.trim();
+    if (!line) continue;
+    const sm = /^([^:]+):\s*(.*)$/.exec(line);
+    if (sm) { section = sm[1].trim(); line = sm[2]; }
+    const toks = line.split(/[\s|]+/).filter(Boolean);
+    let rep = 1;
+    const rm = toks.length && /^x(\d+)$/i.exec(toks[toks.length - 1]);
+    if (rm) { rep = clamp(+rm[1], 1, 16); toks.pop(); }
+    const chords = [];
+    for (const t of toks) { const c = parseChord(t); c ? chords.push(c) : bad.push(t); }
+    for (let r = 0; r < rep; r++) for (const c of chords) seq.push({ chord: c, section });
+  }
+  return { seq, bad };
+}
+
+const store = {
+  get() { try { return JSON.parse(localStorage.getItem("rockfingers.songs") || "[]"); } catch { return []; } },
+  set(list) { try { localStorage.setItem("rockfingers.songs", JSON.stringify(list)); } catch {} },
+};
+let custom = store.get();
+const allSongs = () => [...BUILTIN, ...custom];
+
+/* ───────────────────────── Audio rig ───────────────────────── */
+const SOUNDS = {
+  guitar: { clean: 1, drive: 0, chorus: 0.55, echo: 0.22, verb: 0.28, drums: 0.5 },
+  synth:  { clean: 1, drive: 0, chorus: 0.6,  echo: 0.3,  verb: 0.45, drums: 0.45 },
+  rock:   { clean: 0, drive: 1, chorus: 0,    echo: 0.08, verb: 0.15, drums: 0.75 },
+};
+const DEFAULT_PATTERN = { guitar: "arp", synth: "strum", rock: "pulse" };
+
+class Rig {
+  constructor() {
+    const c = this.ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: "interactive" });
+    this.cache = new Map();
+    this.voices = new Set();
+    this.held = null;
+    this.sound = "guitar";
+
+    const comp = c.createDynamicsCompressor();
+    comp.threshold.value = -14; comp.ratio.value = 4; comp.attack.value = 0.003; comp.release.value = 0.2;
+    const master = c.createGain(); master.gain.value = 0.9;
+    comp.connect(master); master.connect(c.destination);
+    this.comp = comp;
+
+    // voices -> tone (hand-controlled brightness) -> clean or driven path -> fx
+    this.bus = c.createGain(); this.bus.gain.value = 0.7;
+    this.tone = this.biq("lowpass", 6500, 0.5);
+    this.bus.connect(this.tone);
+    this.fx = c.createGain();
+    this.cleanG = c.createGain();
+    this.tone.connect(this.cleanG); this.cleanG.connect(this.fx);
+
+    this.shaper = c.createWaveShaper(); this.shaper.oversample = "4x";
+    this.setDrive(30);
+    this.driveG = c.createGain();
+    [this.tone, this.biq("highpass", 85), this.biq("peaking", 800, 1, 5), this.shaper,
+     this.biq("peaking", 120, 1, 3), this.biq("peaking", 400, 1, -3), this.biq("peaking", 2400, 1.5, 3),
+     this.biq("lowpass", 4800, 0.8), this.biq("lowpass", 7000), this.driveG].reduce((a, b) => (a.connect(b), b));
+    this.driveG.connect(this.fx);
+
+    this.fx.connect(comp); // dry
+
+    // chorus: one modulated short delay mixed with the dry signal
+    const cd = c.createDelay(0.05); cd.delayTime.value = 0.012;
+    const lfo = c.createOscillator(), depth = c.createGain();
+    lfo.frequency.value = 0.7; depth.gain.value = 0.003;
+    lfo.connect(depth); depth.connect(cd.delayTime); lfo.start();
+    this.chorusW = c.createGain();
+    this.fx.connect(cd); cd.connect(this.chorusW); this.chorusW.connect(comp);
+
+    // dotted-eighth echo with darkening feedback
+    this.echo = c.createDelay(2);
+    const fb = c.createGain(), elp = this.biq("lowpass", 2800, 0.5);
+    fb.gain.value = 0.32;
+    this.echoW = c.createGain();
+    this.fx.connect(this.echo); this.echo.connect(elp); elp.connect(fb); fb.connect(this.echo);
+    elp.connect(this.echoW); this.echoW.connect(comp);
+
+    this.verb = c.createConvolver(); this.verb.buffer = this.impulse(2.8);
+    this.verbW = c.createGain();
+    this.fx.connect(this.verb); this.verb.connect(this.verbW); this.verbW.connect(comp);
+
+    // drums
+    this.dBus = c.createGain(); this.dBus.connect(comp);
+    this.noise = c.createBuffer(1, c.sampleRate, c.sampleRate);
+    const nd = this.noise.getChannelData(0);
+    for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+
+    // one shared 16th-note clock drives drums, arpeggios and pulses so they lock together
+    this.bpm = 100; this.drumsOn = false; this.step = 0; this.next = c.currentTime + 0.05; this.beats = [];
+    setInterval(() => this.tick(), 25);
+
+    this.setSound("guitar");
+    this.setBpm(100);
+  }
+
+  biq(type, f, Q = 0.7, gain = 0) {
+    const b = this.ctx.createBiquadFilter();
+    b.type = type; b.frequency.value = f; b.Q.value = Q; b.gain.value = gain;
+    return b;
+  }
+
+  impulse(sec) {
+    const c = this.ctx, len = (c.sampleRate * sec) | 0, buf = c.createBuffer(2, len, c.sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const d = buf.getChannelData(ch);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 3;
+    }
+    return buf;
+  }
+
+  setDrive(k) {
+    const n = 2048, curve = new Float32Array(n), norm = Math.tanh(k);
+    for (let i = 0; i < n; i++) { const x = (i / (n - 1)) * 2 - 1; curve[i] = Math.tanh(k * x) / norm; }
+    this.shaper.curve = curve;
+  }
+
+  setSound(name) {
+    this.sound = name;
+    const p = SOUNDS[name], now = this.ctx.currentTime;
+    this.cleanG.gain.setTargetAtTime(p.clean, now, 0.03);
+    this.driveG.gain.setTargetAtTime(p.drive * 0.45, now, 0.03);
+    this.chorusW.gain.setTargetAtTime(p.chorus, now, 0.05);
+    this.echoW.gain.setTargetAtTime(p.echo, now, 0.05);
+    this.verbW.gain.setTargetAtTime(p.verb, now, 0.05);
+    this.dBus.gain.setTargetAtTime(p.drums, now, 0.05);
+  }
+
+  setBpm(b) {
+    this.bpm = b;
+    this.echo.delayTime.setTargetAtTime(0.75 * 60 / b, this.ctx.currentTime, 0.05);
+  }
+
+  setBright(v) { this.tone.frequency.setTargetAtTime(500 * 24 ** v, this.ctx.currentTime, 0.04); }
+
+  // Karplus-Strong plucked string, rendered once per MIDI note.
+  // The averaging filter adds half a sample of delay; _rate corrects the tuning for that.
+  ks(midi) {
+    if (this.cache.has(midi)) return this.cache.get(midi);
+    const c = this.ctx, sr = c.sampleRate, f = 440 * 2 ** ((midi - 69) / 12);
+    const N = Math.max(2, Math.round(sr / f - 0.5)), len = (sr * 2.8) | 0, ring = new Float32Array(N);
+    let last = 0, mean = 0;
+    for (let i = 0; i < N; i++) { last = last * 0.35 + (Math.random() * 2 - 1) * 0.65; ring[i] = last; mean += last; }
+    mean /= N; for (let i = 0; i < N; i++) ring[i] -= mean;
+    const buf = c.createBuffer(1, len, sr), d = buf.getChannelData(0);
+    let idx = 0, peak = 0;
+    for (let i = 0; i < len; i++) {
+      const nx = idx + 1 === N ? 0 : idx + 1, a = ring[idx];
+      d[i] = a; ring[idx] = 0.9987 * 0.5 * (a + ring[nx]); idx = nx;
+      if (Math.abs(a) > peak) peak = Math.abs(a);
+    }
+    const fade = (sr * 0.4) | 0;
+    for (let i = 0; i < len; i++) d[i] *= (0.6 / peak) * Math.min(1, (len - i) / fade);
+    buf._rate = f / (sr / (N + 0.5));
+    this.cache.set(midi, buf);
+    return buf;
+  }
+  prepare(chords) { for (const ch of chords) for (const m of [...ch.notes, ...ch.power]) this.ks(m); }
+
+  track(g, srcs, pad = false) {
+    const v = { g, srcs, pad };
+    this.voices.add(v);
+    srcs[0].onended = () => this.voices.delete(v);
+    return v;
+  }
+  releaseVoice(v, t, tau) {
+    try { v.g.gain.cancelAndHoldAtTime(t); } catch { v.g.gain.cancelScheduledValues(t); }
+    v.g.gain.setTargetAtTime(0, t, tau);
+    for (const s of v.srcs) { try { s.stop(t + tau * 8); } catch {} }
+  }
+
+  pluck(midi, t, vel, len = 0) {
+    const c = this.ctx, src = c.createBufferSource(), buf = this.ks(midi), g = c.createGain();
+    src.buffer = buf; src.playbackRate.value = buf._rate;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vel, t + 0.003);
+    src.connect(g); g.connect(this.bus);
+    src.start(t);
+    if (len) { g.gain.setTargetAtTime(0, t + len, len * 0.4); src.stop(t + len * 5); }
+    this.track(g, [src]);
+  }
+
+  synthPluck(midi, t, vel) {
+    const c = this.ctx, f = 440 * 2 ** ((midi - 69) / 12);
+    const o1 = c.createOscillator(), o2 = c.createOscillator(), lp = this.biq("lowpass", 4500, 2), g = c.createGain();
+    o1.type = "sawtooth"; o2.type = "square"; o1.frequency.value = o2.frequency.value = f; o2.detune.value = 7;
+    lp.frequency.setValueAtTime(4500, t); lp.frequency.exponentialRampToValueAtTime(500, t + 0.35);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vel * 0.3, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
+    o1.connect(lp); o2.connect(lp); lp.connect(g); g.connect(this.bus);
+    o1.start(t); o2.start(t); o1.stop(t + 1); o2.stop(t + 1);
+    this.track(g, [o1, o2]);
+  }
+
+  padOn(notes, t) {
+    const c = this.ctx;
+    return notes.map(midi => {
+      const f = 440 * 2 ** ((midi - 69) / 12), lp = this.biq("lowpass", 2400, 0.3), g = c.createGain();
+      const oscs = [-8, 8].map(det => {
+        const o = c.createOscillator(); o.type = "sawtooth"; o.frequency.value = f; o.detune.value = det;
+        o.connect(lp); o.start(t); return o;
+      });
+      g.gain.setValueAtTime(0, t); g.gain.setTargetAtTime(0.08, t, 0.12);
+      lp.connect(g); g.connect(this.bus);
+      return this.track(g, oscs, true);
+    });
+  }
+
+  note(midi, t, vel, len = 0) {
+    if (this.sound === "synth") this.synthPluck(midi, t, vel); else this.pluck(midi, t, vel, len);
+  }
+  strum(notes, t, short) {
+    const vel = this.sound === "rock" ? 0.4 : 0.32;
+    notes.forEach((m, i) => this.note(m, t + i * (short ? 0.006 : 0.016), vel, short ? 0.12 : 0));
+  }
+  arpNote(h, t) {
+    const n = h.notes.length, order = [...Array(n).keys(), ...Array.from({ length: Math.max(0, n - 2) }, (_, i) => n - 2 - i)];
+    const idx = order[h.i++ % order.length];
+    this.note(h.notes[idx], t, idx === 0 ? 0.5 : 0.36);
+  }
+
+  // Press: start a chord. It keeps going (arp / pulse / pad) until release().
+  play(chord, pattern) {
+    const t = this.ctx.currentTime + 0.005;
+    this.release(t);
+    for (const v of this.voices) this.releaseVoice(v, t, 0.06); // lift fingers off the old chord
+    const notes = this.sound === "rock" ? chord.power : chord.notes;
+    const h = this.held = { notes, pattern, i: 0, pads: [], from: t + 0.12 };
+    if (pattern === "arp") this.arpNote(h, t);
+    else this.strum(notes, t, pattern === "pulse");
+    if (this.sound === "synth" && pattern !== "pulse") h.pads = this.padOn(chord.notes, t);
+  }
+  release(t = this.ctx.currentTime) {
+    if (!this.held) return;
+    for (const v of this.held.pads) this.releaseVoice(v, t, 0.45);
+    this.held = null;
+  }
+  choke() {
+    const t = this.ctx.currentTime;
+    for (const v of this.voices) this.releaseVoice(v, t, 0.03);
+    this.held = null;
+  }
+
+  tick() {
+    const c = this.ctx;
+    if (c.state !== "running") return;
+    const s16 = 60 / this.bpm / 4;
+    if (this.next < c.currentTime - 0.05) this.next = c.currentTime + 0.02; // resync after a stall
+    while (this.next < c.currentTime + 0.1) {
+      const t = this.next, s = this.step, h = this.held;
+      if (this.drumsOn) this.playDrums(s, t);
+      if (h && h.pattern !== "strum" && s % 2 === 0 && t >= h.from) {
+        if (h.pattern === "arp") this.arpNote(h, t); else this.strum(h.notes, t, true);
+      }
+      if (s % 4 === 0) this.beats.push({ t, down: s === 0 });
+      this.next += s16; this.step = (s + 1) % 16;
+    }
+  }
+
+  /* drums */
+  setDrums(on) {
+    this.drumsOn = on;
+    if (on) { this.step = 0; this.next = this.ctx.currentTime + 0.06; if (this.sound === "rock") this.crash(this.next); }
+  }
+  playDrums(s, t) {
+    if (s === 0 || s === 8 || s === 10) this.kick(t);
+    if (s === 4 || s === 12) this.snare(t);
+    if (s % 2 === 0) this.hat(t, s === 14);
+  }
+  env(g, t, peak, dur) {
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  }
+  noiseHit(t, type, f, peak, dur) {
+    const c = this.ctx, src = c.createBufferSource(), flt = this.biq(type, f, 0.8), g = c.createGain();
+    src.buffer = this.noise; src.connect(flt); flt.connect(g); g.connect(this.dBus);
+    this.env(g, t, peak, dur);
+    src.start(t, Math.random() * 0.5); src.stop(t + dur + 0.05);
+  }
+  kick(t) {
+    const c = this.ctx, o = c.createOscillator(), g = c.createGain();
+    o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(42, t + 0.13);
+    o.connect(g); g.connect(this.dBus); this.env(g, t, 1, 0.4);
+    o.start(t); o.stop(t + 0.45);
+  }
+  snare(t) {
+    this.noiseHit(t, "highpass", 1500, 0.6, 0.18);
+    const c = this.ctx, o = c.createOscillator(), g = c.createGain();
+    o.type = "triangle"; o.frequency.value = 185; o.connect(g); g.connect(this.dBus);
+    this.env(g, t, 0.45, 0.09); o.start(t); o.stop(t + 0.12);
+  }
+  hat(t, open) { this.noiseHit(t, "highpass", 8000, 0.18, open ? 0.25 : 0.045); }
+  crash(t) { this.noiseHit(t, "highpass", 5000, 0.35, 1.4); }
+
+  // metronome click for training (skips the tone filter so it's always crisp)
+  click(t, accent, countIn) {
+    const c = this.ctx, o = c.createOscillator(), lp = this.biq("lowpass", 3000), g = c.createGain();
+    o.type = "square"; o.frequency.value = accent ? 1760 : 1320;
+    o.connect(lp); lp.connect(g); g.connect(this.comp);
+    this.env(g, t, countIn ? 0.22 : 0.1, 0.05);
+    o.start(t); o.stop(t + 0.07);
+  }
+}
+
+/* ───────────────────────── State ───────────────────────── */
+let rig = null, landmarker = null, camOn = false;
+const video = $("#video"), canvas = $("#stage"), g = canvas.getContext("2d");
+let W = 0, H = 0, TOP = 0, BOT = 0;
+const S = {
+  songIdx: 0, song: null, pos: 0, cur: -1, mode: "song", sound: "guitar", pattern: "arp",
+  bright: 0.75, brightT: 0.75, lefty: false,
+  hands: [], play: null, expr: null, pinchPt: null,
+  playPinch: false, exprPinch: false, fistLatch: false, held: false,
+  hoverPad: -1, activePad: -1, padRects: [],
+  flash: 0, pulse: 0, pulseDown: false, sparks: [],
+};
+
+function layout() {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  W = innerWidth; H = innerHeight;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  TOP = $("#hdr").offsetHeight + 8;
+  BOT = H - $("#ftr").offsetHeight - 8;
+  $("#coach").style.top = TOP + "px";
+}
+addEventListener("resize", layout);
+new ResizeObserver(layout).observe($("#hdr"));
+layout();
+
+function ensureRig() {
+  if (!rig) {
+    rig = new Rig();
+    rig.setSound(S.sound); rig.setBpm(+$("#bpm").value); rig.setBright(S.bright);
+    if (S.song) rig.prepare(S.song.seq.map(x => x.chord));
+  }
+  if (rig.ctx.state === "suspended") rig.ctx.resume();
+}
+
+/* ───────────────────────── Songs UI ───────────────────────── */
+function fillSongs() {
+  const sel = $("#song");
+  sel.replaceChildren(...allSongs().map((s, i) => new Option((i >= BUILTIN.length ? "★ " : "") + s.title, i)));
+  sel.value = S.songIdx;
+}
+function loadSong(i) {
+  const list = allSongs();
+  S.songIdx = clamp(i, 0, list.length - 1);
+  const def = list[S.songIdx], { seq } = parseSong(def.text);
+  const pads = [];
+  for (const x of seq) if (!pads.some(p => p.name === x.chord.name)) pads.push(x.chord);
+  S.song = { ...def, seq, pads };
+  S.pos = 0; S.cur = -1; S.activePad = -1; S.nowName = null;
+  $("#song").value = S.songIdx;
+  $("#bpm").value = def.bpm; $("#bpmV").textContent = def.bpm;
+  $("#delSong").hidden = S.songIdx < BUILTIN.length;
+  if (rig) { rig.setBpm(def.bpm); rig.prepare(seq.map(x => x.chord)); }
+}
+
+/* ───────────────────────── Actions ───────────────────────── */
+function trigger(chord) {
+  ensureRig();
+  rig.play(chord, S.pattern);
+  S.held = true; S.flash = 1; S.nowName = chord.name;
+  const [x0, x1] = playSide();
+  for (let i = 0; i < 18; i++) {
+    S.sparks.push({ x: x0 + Math.random() * (x1 - x0), y: TOP + guideH() + Math.random() * 40,
+      vx: (Math.random() - 0.5) * 3, vy: 1 + Math.random() * 3, life: 1 });
+  }
+}
+function playNext() {
+  const seq = S.song?.seq;
+  if (!seq?.length) return;
+  const k = S.pos % seq.length;
+  trigger(seq[k].chord);
+  S.cur = k; S.pos = (k + 1) % seq.length;
+  S.activePad = S.song.pads.findIndex(p => p.name === seq[k].chord.name);
+}
+function playPad(i) {
+  if (T.active) { if (T.kind === "pads") padsPad(i); return; }
+  const pad = S.song?.pads[i];
+  if (!pad) return;
+  trigger(pad);
+  S.activePad = i;
+  const seq = S.song.seq;
+  if (seq[S.pos]?.chord.name === pad.name) { S.cur = S.pos; S.pos = (S.pos + 1) % seq.length; }
+}
+function releaseHeld() { rig?.release(); S.held = false; S.activePad = -1; }
+function back() { const n = S.song.seq.length; if (n) S.pos = (S.pos - 1 + n) % n; }
+function skip() { const n = S.song.seq.length; if (n) S.pos = (S.pos + 1) % n; }
+function restart() { S.pos = 0; S.cur = -1; S.nowName = null; }
+function stopAll() { rig?.choke(); S.held = false; S.activePad = -1; }
+
+// Every input goes through these, so training lessons can take them over.
+function onPinch(fromCam) {
+  if (trainPinch(fromCam)) return;
+  if (S.mode === "song") playNext();
+  else if (fromCam) { if (S.hoverPad >= 0) playPad(S.hoverPad); }
+  else { const i = S.song.pads.findIndex(p => p.name === S.song.seq[S.pos]?.chord.name); if (i >= 0) playPad(i); }
+}
+function onRelease() { releaseHeld(); trainRelease(); }
+function onBack() { if (T.active) trainEvent("back"); else back(); }
+function onStop() { stopAll(); trainEvent("stop"); }
+
+/* ───────────────────────── Hand tracking ───────────────────────── */
+async function startCamera() {
+  $("#err").textContent = "";
+  ensureRig();
+  $("#status").textContent = "opening camera…";
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 30 }, facingMode: "user" }, audio: false,
+    });
+    video.srcObject = stream;
+    await video.play();
+  } catch (e) {
+    $("#err").textContent = "Camera unavailable (" + e.name + "). You can still play with the keyboard.";
+    $("#status").textContent = "keyboard mode";
+    return;
+  }
+  $("#intro").style.display = "none";
+  $("#status").textContent = "loading hand model…";
+  try {
+    const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm");
+    const opts = delegate => ({
+      baseOptions: {
+        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+        delegate,
+      },
+      runningMode: "VIDEO", numHands: 2,
+      // low presence/tracking thresholds keep a pinched or fisted hand tracked instead of re-detecting every frame
+      minHandDetectionConfidence: 0.5, minHandPresenceConfidence: 0.3, minTrackingConfidence: 0.3,
+    });
+    try { landmarker = await HandLandmarker.createFromOptions(vision, opts("GPU")); }
+    catch { landmarker = await HandLandmarker.createFromOptions(vision, opts("CPU")); }
+    camOn = true;
+    $("#status").textContent = "live — show me your hands";
+  } catch (e) {
+    console.error(e);
+    $("#status").textContent = "hand model failed to load — keyboard mode";
+  }
+}
+
+function toScreen(p) {
+  const vw = video.videoWidth, vh = video.videoHeight, s = Math.max(W / vw, H / vh);
+  return { x: (W - vw * s) / 2 + (1 - p.x) * vw * s, y: (H - vh * s) / 2 + p.y * vh * s };
+}
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const avg = (pts, ids) => ({ x: ids.reduce((s, i) => s + pts[i].x, 0) / ids.length, y: ids.reduce((s, i) => s + pts[i].y, 0) / ids.length });
+const playSide = () => (S.lefty ? [0, W * 0.5] : [W * 0.5, W]);
+const exprSide = () => (S.lefty ? [W * 0.5, W] : [0, W * 0.5]);
+const guideH = () => clamp(H * 0.2, 100, 160);
+
+let lastVideoTime = -1;
+const perf = { ms: 0, n: 0, since: 0 };
+function track(now) {
+  if (!camOn || video.readyState < 2 || video.currentTime === lastVideoTime) return;
+  lastVideoTime = video.currentTime;
+  const t0 = performance.now();
+  const res = landmarker.detectForVideo(video, now);
+  perf.ms += performance.now() - t0; perf.n++;
+  if (now - perf.since > 500) {
+    $("#status").textContent = `tracking ${Math.round(perf.n * 1000 / (now - perf.since))} fps · ${(perf.ms / perf.n).toFixed(0)} ms/frame`;
+    perf.ms = 0; perf.n = 0; perf.since = now;
+  }
+
+  const hands = (res.landmarks || []).map(lm => {
+    const pts = lm.map(toScreen);
+    return { pts, palm: avg(pts, [0, 5, 9, 13, 17]), size: dist(pts[0], pts[9]) };
+  });
+  S.hands = hands;
+
+  let expr = null, play = null;
+  if (hands.length >= 2) {
+    const [a, b] = hands.slice(0, 2).sort((h1, h2) => h1.palm.x - h2.palm.x);
+    [expr, play] = S.lefty ? [b, a] : [a, b];
+  } else if (hands.length === 1) {
+    const onLeft = hands[0].palm.x < W / 2;
+    if (onLeft !== S.lefty) expr = hands[0]; else play = hands[0];
+  }
+  S.expr = expr; S.play = play;
+
+  if (play) handlePlay(play);
+  else { S.pinchPt = null; S.hoverPad = -1; if (S.playPinch) { S.playPinch = false; onRelease(); } }
+  if (expr) handleExpr(expr);
+  else { S.exprPinch = false; S.fistLatch = false; }
+}
+
+function pinched(h, was) {
+  const r = dist(h.pts[4], h.pts[8]) / h.size;
+  return was ? r < 0.45 : r < 0.3; // hysteresis so it doesn't flicker
+}
+
+function handlePlay(h) {
+  const pt = avg(h.pts, [4, 8]);
+  S.pinchPt = pt;
+  S.hoverPad = S.mode === "pads" ? S.padRects.findIndex(r => pt.x >= r.x && pt.x <= r.x + r.w && pt.y >= r.y && pt.y <= r.y + r.h) : -1;
+  const p = pinched(h, S.playPinch);
+  if (p && !S.playPinch) onPinch(true);
+  else if (!p && S.playPinch) onRelease();
+  S.playPinch = p;
+}
+
+function handleExpr(h) {
+  const { pts, palm } = h;
+  S.brightT = clamp((BOT - palm.y) / (BOT - TOP), 0, 1);
+  const extended = [[8, 6], [12, 10], [16, 14], [20, 18]].filter(([tip, pip]) => dist(pts[0], pts[tip]) > dist(pts[0], pts[pip]) * 1.1).length;
+  const fist = extended === 0;
+  if (fist && !S.fistLatch) onStop();
+  S.fistLatch = fist;
+  const p = !fist && pinched(h, S.exprPinch);
+  if (p && !S.exprPinch) onBack();
+  S.exprPinch = p;
+}
+
+/* ───────────────────────── Render ───────────────────────── */
+const BONES = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
+
+function rrect(x, y, w, h, r) { g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, r) : g.rect(x, y, w, h); }
+
+function drawGuide() {
+  const seq = S.song.seq, gh = guideH(), y0 = TOP, x0 = 16;
+  g.textBaseline = "alphabetic";
+
+  // title + position
+  g.font = "11px JetBrains Mono, monospace"; g.fillStyle = "rgba(243,233,220,0.5)"; g.textAlign = "right";
+  const sec = seq[S.cur >= 0 ? S.cur : S.pos]?.section || "";
+  g.fillText(`${sec ? sec.toUpperCase() + "  ·  " : ""}${S.cur + 1} / ${seq.length}`, W - 16, y0 + 12);
+
+  // NOW
+  g.textAlign = "left"; g.fillStyle = "rgba(243,233,220,0.45)";
+  g.fillText("NOW", x0, y0 + 12);
+  const nowName = S.nowName || "—";
+  const big = gh * 0.62;
+  g.font = `600 ${big}px Oswald`;
+  g.fillStyle = "#ffb02e"; g.shadowColor = "#ff5a1f"; g.shadowBlur = 18 + 30 * S.flash;
+  g.fillText(nowName, x0, y0 + 12 + big * 0.92);
+  g.shadowBlur = 0;
+  const nowW = Math.max(g.measureText(nowName).width, big * 0.8);
+
+  if (rig && (rig.drumsOn || S.pattern !== "strum")) {
+    g.fillStyle = `rgba(255,${S.pulseDown ? 90 : 176},${S.pulseDown ? 60 : 46},${0.25 + 0.75 * S.pulse})`;
+    g.beginPath(); g.arc(x0 + 44, y0 + 8, 3 + 3 * S.pulse, 0, 7); g.fill();
+  }
+
+  // upcoming lane
+  let x = x0 + nowW + 28;
+  const pillH = gh * 0.42, py = y0 + 12 + big * 0.92 - pillH * 0.82;
+  g.font = "11px JetBrains Mono, monospace"; g.fillStyle = "rgba(243,233,220,0.45)";
+  g.fillText("NEXT", x, y0 + 12);
+  let prevSec = seq[S.cur]?.section;
+  for (let k = 0; k < 12 && seq.length; k++) {
+    const item = seq[(S.pos + k) % seq.length];
+    const size = k === 0 ? pillH * 0.78 : pillH * 0.55;
+    g.font = `500 ${size}px Oswald`;
+    const w = Math.max(g.measureText(item.chord.name).width + 22, pillH * 0.9);
+    if (x + w > W - 16) break;
+    if (item.section !== prevSec) {
+      g.font = "10px JetBrains Mono, monospace"; g.fillStyle = "rgba(255,176,46,0.7)";
+      g.fillText(item.section.toUpperCase(), x, py - 6);
+      prevSec = item.section;
+    }
+    rrect(x, py, w, pillH, 8);
+    if (k === 0) {
+      const a = 0.55 + 0.35 * Math.sin(performance.now() / 180);
+      g.fillStyle = "rgba(255,176,46,0.12)"; g.fill();
+      g.strokeStyle = `rgba(255,176,46,${a})`; g.lineWidth = 2; g.stroke();
+    } else { g.strokeStyle = "rgba(255,176,46,0.15)"; g.lineWidth = 1; g.stroke(); }
+    g.font = `500 ${size}px Oswald`; g.fillStyle = k === 0 ? "#f3e9dc" : `rgba(243,233,220,${0.6 - k * 0.04})`;
+    g.textAlign = "center"; g.fillText(item.chord.name, x + w / 2, py + pillH / 2 + size * 0.36);
+    g.textAlign = "left";
+    x += w + 8;
+  }
+}
+
+function drawSongOrb(x0, x1, y0, y1) {
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, r = Math.max(20, Math.min(x1 - x0, y1 - y0) * 0.32);
+  const seq = S.song.seq, next = seq.length ? seq[S.pos % seq.length].chord.name : "—";
+  g.beginPath(); g.arc(cx, cy, r, 0, 7);
+  if (S.held) {
+    const grd = g.createRadialGradient(cx, cy, 0, cx, cy, r);
+    grd.addColorStop(0, "rgba(255,176,46,0.35)"); grd.addColorStop(1, "rgba(255,90,30,0.05)");
+    g.fillStyle = grd; g.fill();
+  }
+  g.strokeStyle = `rgba(255,176,46,${S.held ? 0.9 : 0.35 + 0.15 * Math.sin(performance.now() / 300)})`;
+  g.lineWidth = S.held ? 3 : 2; g.stroke();
+  g.textAlign = "center";
+  g.font = "11px JetBrains Mono, monospace"; g.fillStyle = "rgba(243,233,220,0.5)";
+  g.fillText(S.held ? "RINGING — RELEASE, THEN PINCH" : "PINCH TO PLAY", cx, cy - r * 0.42);
+  g.font = `600 ${r * 0.6}px Oswald`; g.fillStyle = S.held ? "rgba(243,233,220,0.35)" : "#f3e9dc";
+  g.fillText(next, cx, cy + r * 0.25);
+  g.font = "11px JetBrains Mono, monospace"; g.fillStyle = "rgba(243,233,220,0.4)";
+  g.fillText("next", cx, cy + r * 0.5);
+}
+
+function drawPads(x0, x1, y0, y1) {
+  const pads = S.song.pads, n = pads.length;
+  const cols = n <= 4 ? 2 : n <= 9 ? 3 : 4, rows = Math.ceil(n / cols), gap = 10;
+  const w = (x1 - x0 - gap * (cols - 1)) / cols, h = Math.min((y1 - y0 - gap * (rows - 1)) / rows, w * 0.8);
+  const expected = expectedPadName();
+  S.padRects = pads.map((p, i) => {
+    const r = { x: x0 + (i % cols) * (w + gap), y: y0 + Math.floor(i / cols) * (h + gap), w, h };
+    const active = i === S.activePad, hover = i === S.hoverPad, isNext = p.name === expected;
+    rrect(r.x, r.y, r.w, r.h, 10);
+    g.fillStyle = active ? "rgba(255,176,46,0.35)" : hover ? "rgba(255,176,46,0.14)" : "rgba(255,255,255,0.03)";
+    g.fill();
+    if (isNext) {
+      g.strokeStyle = `rgba(255,176,46,${0.55 + 0.4 * Math.sin(performance.now() / 160)})`; g.lineWidth = 3;
+    } else { g.strokeStyle = hover ? "rgba(255,176,46,0.6)" : "rgba(255,176,46,0.15)"; g.lineWidth = hover ? 2 : 1; }
+    g.stroke();
+    g.textAlign = "center";
+    g.font = `600 ${Math.min(h * 0.42, w * 0.32)}px Oswald`;
+    g.fillStyle = active || isNext ? "#ffb02e" : "rgba(243,233,220,0.75)";
+    g.fillText(p.name, r.x + r.w / 2, r.y + r.h / 2 + Math.min(h * 0.5, w * 0.4) * 0.35);
+    g.font = "10px JetBrains Mono, monospace"; g.fillStyle = "rgba(243,233,220,0.35)";
+    g.textAlign = "left"; if (i < 9) g.fillText(String(i + 1), r.x + 8, r.y + 16);
+    if (isNext) { g.textAlign = "right"; g.fillStyle = "#ffb02e"; g.fillText("NEXT", r.x + r.w - 8, r.y + 16); }
+    return r;
+  });
+}
+
+function drawTone(x0, x1, y0, y1) {
+  const bx = S.lefty ? x1 - 30 : x0 + 20, bw = 10, h = y1 - y0;
+  rrect(bx, y0, bw, h, 5); g.fillStyle = "rgba(255,255,255,0.05)"; g.fill();
+  const fh = h * S.bright;
+  rrect(bx, y1 - fh, bw, fh, 5);
+  const grd = g.createLinearGradient(0, y1, 0, y0);
+  grd.addColorStop(0, "rgba(255,90,40,0.6)"); grd.addColorStop(1, "rgba(255,220,140,0.9)");
+  g.fillStyle = grd; g.fill();
+  g.save(); g.translate(bx + (S.lefty ? -10 : 26), y0 + 4);
+  g.font = "10px JetBrains Mono, monospace"; g.fillStyle = "rgba(243,233,220,0.5)"; g.textAlign = S.lefty ? "right" : "left";
+  g.fillText("TONE ↑ bright", 0, 8); g.fillText("pinch = back", 0, 24); g.fillText("fist = stop", 0, 40);
+  g.restore();
+}
+
+function draw() {
+  g.fillStyle = "#0b0907"; g.fillRect(0, 0, W, H);
+  if (camOn && video.videoWidth) {
+    const vw = video.videoWidth, vh = video.videoHeight, s = Math.max(W / vw, H / vh);
+    g.save(); g.globalAlpha = 0.3; g.translate(W, 0); g.scale(-1, 1);
+    g.drawImage(video, (W - vw * s) / 2, (H - vh * s) / 2, vw * s, vh * s);
+    g.restore();
+  }
+  const vig = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.2, W / 2, H / 2, Math.max(W, H) * 0.75);
+  vig.addColorStop(0, "rgba(40,14,4,0)"); vig.addColorStop(1, "rgba(5,3,2,0.85)");
+  g.fillStyle = vig; g.fillRect(0, 0, W, H);
+  if (!S.song) return;
+
+  if (T.active) drawTraining();
+  else {
+    drawGuide();
+    const areaTop = TOP + guideH() + 16;
+    const [px0, px1] = playSide(), [ex0, ex1] = exprSide();
+    if (S.mode === "song") { S.padRects = []; drawSongOrb(px0 + 8, px1 - 16, areaTop, BOT); }
+    else drawPads(px0 + 8, px1 - 16, areaTop, BOT);
+    drawTone(ex0 + 16, ex1 - 16, areaTop, BOT);
+  }
+
+  for (const p of S.sparks) {
+    p.x += p.vx; p.y += p.vy; p.vy *= 0.97; p.life -= 0.02;
+    g.fillStyle = `rgba(255,${150 + 80 * p.life},60,${p.life})`; g.fillRect(p.x, p.y, 2.5, 2.5);
+  }
+  S.sparks = S.sparks.filter(p => p.life > 0);
+
+  for (const h of S.hands) {
+    const col = h === S.play ? "#ffb02e" : "#ff6b4a";
+    g.beginPath();
+    for (const [a, b] of BONES) { g.moveTo(h.pts[a].x, h.pts[a].y); g.lineTo(h.pts[b].x, h.pts[b].y); }
+    g.strokeStyle = col; g.globalAlpha = 0.25; g.lineWidth = 9; g.stroke(); // cheap glow
+    g.globalAlpha = 1; g.lineWidth = 3; g.stroke();
+    g.fillStyle = "#fff";
+    for (const p of h.pts) { g.beginPath(); g.arc(p.x, p.y, 2.5, 0, 7); g.fill(); }
+  }
+  if (S.pinchPt) {
+    g.beginPath(); g.arc(S.pinchPt.x, S.pinchPt.y, S.playPinch ? 14 : 10, 0, 7);
+    g.strokeStyle = "#ffb02e"; g.lineWidth = 2; g.stroke();
+    if (S.playPinch) { g.fillStyle = "rgba(255,176,46,0.5)"; g.fill(); }
+  }
+}
+
+function frame(now) {
+  requestAnimationFrame(frame); // schedule first so one error can never freeze the loop
+  try { track(now); } catch (e) { console.error(e); }
+  if (Math.abs(S.brightT - S.bright) > 0.002) { S.bright += (S.brightT - S.bright) * 0.2; rig?.setBright(S.bright); }
+  if (rig) while (rig.beats.length && rig.beats[0].t <= rig.ctx.currentTime) { S.pulseDown = rig.beats.shift().down; S.pulse = 1; }
+  S.flash *= 0.9; S.pulse *= 0.85;
+
+  try { draw(); } catch (e) { console.error(e); }
+}
+
+/* ───────────────────────── Training ─────────────────────────
+   Lessons are generated from any song's chords. LESSON_NOTES adds hand-written
+   coaching for specific songs on top. */
+const LESSON_NOTES = {
+  "Let Down — Radiohead": {
+    intro: "Let Down rides a chiming, picked guitar in A major. It only uses A, E, F#m and D, plus an Asus4 in the bridge. Learn the verse loop first, because the chorus mostly swaps in D. The sound is set to Clean guitar + Arpeggio, close to the record.",
+    setup: { sound: "guitar", pattern: "arp", bright: 0.7 },
+    chords: {
+      A: "Home base. The verse starts here and keeps coming back to it. Bright and settled.",
+      E: "The 'lift'. In the verse it comes every second chord, between A and F#m.",
+      "F#m": "The sad one (minor). In the chorus it's held for two bars in a row.",
+      D: "Only shows up in the chorus. When you see D coming, the chorus is starting.",
+      Asus4: "A with a tense, unresolved note on top. It wants to fall back to A, and in the bridge it does.",
+    },
+    sections: {
+      Verse: "Four chords on loop: A → E → F#m → E. E comes back every other chord, so think 'home, lift, sad, lift'.",
+      Chorus: "Starts on D: D → A → F#m → F#m (pinch F#m twice), then D → A → F#m → E. That last E pulls you back into the verse.",
+      Bridge: "Two bars of Asus4, then two of A. Let the tension hang, then relax into A.",
+    },
+    full: "Verse ×2 → Chorus → Verse ×2 → Chorus → Bridge → Chorus → end on A. The orange labels above the lane warn you when a section changes.",
+  },
+  "D>E>A>T>H>M>E>T>A>L — Panchiko": {
+    intro: "Despite the name, this is hazy lo-fi indie, not metal. The whole song sways between two dreamy chords, Ebmaj7 and Eb/C (on a real guitar: Dmaj7 and D/B with a capo on fret 1). The chords are easy. The skill here is a slow, steady, relaxed pulse. The sound is set to Clean guitar + Arpeggio with a darker tone for that worn-tape feel.",
+    setup: { sound: "guitar", pattern: "arp", bright: 0.4 },
+    chords: {
+      Ebmaj7: "Eb major 7: warm and floating. This is the home of the song.",
+      "Eb/C": "The same Eb chord with C underneath, so it sounds like C minor 7: deeper and a bit wistful. Only the bass note really changes.",
+    },
+    sections: {
+      Verse: "Ebmaj7 → Eb/C, one bar each, over and over. Count 1-2-3-4 with the clicks and pinch on every '1'. Stay loose, it's meant to feel lazy.",
+    },
+    full: "Verse, chorus, bridge and outro all use the same two-chord sway, and the outro repeats it 8 times. To keep it alive, slowly sweep your other hand up and down to open and close the tone.",
+  },
+};
+
+const NOTE_NAMES = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+const noteList = c => [...new Set(c.notes.map(n => NOTE_NAMES[n % 12]))].join(" · ");
+function chordFeel(name) {
+  const m = /^([A-G][#b]?)([^/]*)(?:\/(.+))?$/.exec(name);
+  if (!m) return "a chord";
+  const q = m[2];
+  let feel = q === "" ? "major: bright and stable"
+    : /^m(?!aj)/.test(q) ? (q.includes("7") ? "minor 7: mellow and moody" : "minor: sad or serious")
+    : q.startsWith("maj") ? "major 7: dreamy and floating"
+    : q.includes("sus") ? "suspended: open and unresolved, it wants to move"
+    : q === "7" ? "dominant 7: bluesy, it pulls toward the next chord"
+    : q === "5" ? "a power chord: just root and fifth"
+    : q.startsWith("add") ? "major with an added note: shimmery"
+    : q.startsWith("dim") ? "diminished: tense and spooky"
+    : "a colour chord";
+  if (m[3]) feel += `, with ${m[3]} in the bass`;
+  return feel;
+}
+
+function minPeriod(names) {
+  for (let p = 1; p <= names.length; p++) {
+    if (names.length % p) continue;
+    let ok = true;
+    for (let i = p; i < names.length && ok; i++) ok = names[i] === names[i - p];
+    if (ok) return p;
+  }
+  return names.length;
+}
+function songSections(seq) {
+  const out = [];
+  for (const x of seq) {
+    const last = out[out.length - 1];
+    if (last && last.name === x.section) last.chords.push(x.chord);
+    else out.push({ name: x.section || "Song", chords: [x.chord] });
+  }
+  return out;
+}
+// Sections that share the same repeating chord loop are practised together.
+function practiceGroups(seq) {
+  const groups = new Map();
+  for (const s of songSections(seq)) {
+    const names = s.chords.map(c => c.name);
+    if (new Set(names).size < 2) continue; // skip one-chord intros/outros
+    const p = minPeriod(names), key = names.slice(0, p).join(" ");
+    if (!groups.has(key)) groups.set(key, { key, names: [s.name], unit: s.chords.slice(0, p) });
+    else if (!groups.get(key).names.includes(s.name)) groups.get(key).names.push(s.name);
+  }
+  return [...groups.values()].map(gp => {
+    const chords = [];
+    while (chords.length < 8) chords.push(...gp.unit);
+    return { ...gp, chords };
+  });
+}
+
+function buildLessons(song) {
+  const L = [
+    { id: "gestures", kind: "gestures", global: true, title: "Gestures warm-up", desc: "Pinch, hold, release, tone, back and stop. Do this once." },
+    { id: "chords", kind: "chords", title: "Meet the chords", desc: `${song.pads.length} chords: ${song.pads.map(c => c.name).join(", ")}` },
+  ];
+  for (const gp of practiceGroups(song.seq)) {
+    L.push({ id: "sec:" + gp.key, kind: "highway", startSpeed: 0.6, chords: gp.chords, section: gp.names[0],
+      title: `Practice: ${gp.names.slice(0, 3).join(" / ")}${gp.names.length > 3 ? " …" : ""}`,
+      desc: `In time, slow at first: ${gp.unit.map(c => c.name).join(" → ")}` });
+  }
+  L.push({ id: "full", kind: "highway", startSpeed: 0.8, chords: song.seq.map(x => x.chord), sections: song.seq.map(x => x.section),
+    title: "Full song", desc: `All ${song.seq.length} chords in time, with the section changes.` });
+  L.push({ id: "pads", kind: "pads", title: "Pads: from memory", desc: "Pick each chord yourself, first with hints, then without." });
+  return L;
+}
+
+function songIntro(song) {
+  const n = LESSON_NOTES[song.title];
+  if (n?.intro) return n.intro;
+  const counts = {};
+  for (const x of song.seq) counts[x.chord.name] = (counts[x.chord.name] || 0) + 1;
+  const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0];
+  const secs = [...new Set(song.seq.map(x => x.section).filter(Boolean))];
+  return `${song.pads.length} chords (${song.pads.map(c => c.name).join(", ")})` +
+    (secs.length ? ` across ${secs.length} section${secs.length > 1 ? "s" : ""} (${secs.join(", ")})` : "") +
+    `. ${top ? top + " shows up the most. " : ""}These lessons are built automatically from the chords you typed.`;
+}
+function chordTip(song, c) { return LESSON_NOTES[song.title]?.chords?.[c.name] || `${c.name} is ${chordFeel(c.name)}.`; }
+function sectionTip(song, L) {
+  const hand = LESSON_NOTES[song.title]?.sections?.[L.section];
+  if (hand) return hand;
+  const names = L.chords.map(c => c.name), unit = names.slice(0, minPeriod(names));
+  let tip = `A loop of ${unit.length}: ${unit.join(" → ")}.`;
+  const dbl = unit.find((x, i) => unit.length > 1 && x === unit[(i + 1) % unit.length]);
+  if (dbl) tip += ` ${dbl} comes twice in a row, so pinch it again on the next bar.`;
+  return tip + ` One pinch every ${song.beats || 4} beats. The clicks count the beats.`;
+}
+function fullTip(song) {
+  const hand = LESSON_NOTES[song.title]?.full;
+  if (hand) return hand;
+  const order = songSections(song.seq).map(s => s.name);
+  return `Order: ${order.join(" → ")}. Watch the orange labels above the lane for section changes.`;
+}
+
+const progress = {
+  data: (() => { try { return JSON.parse(localStorage.getItem("rockfingers.progress") || "{}"); } catch { return {}; } })(),
+  get(song, id) { return this.data[song]?.[id]; },
+  set(song, id, v) {
+    (this.data[song] ??= {})[id] = v;
+    try { localStorage.setItem("rockfingers.progress", JSON.stringify(this.data)); } catch {}
+  },
+};
+
+const T = {
+  active: false, lessons: [], lesson: null, idx: -1, kind: null, finished: false, token: 0,
+  step: 0, okAt: 0, holdStart: 0, chordI: 0, chordN: 0,
+  hw: null, timer: null, speed: 0.6, metro: true, pads: null,
+  popups: [], prevMode: null, setupFor: null, hitX: 0, hitY: 0,
+};
+const PTS = { perfect: 1, good: 0.75, early: 0.4, late: 0.4, miss: 0 };
+const POP_COL = { perfect: "#ffe08a", good: "#ffb02e", early: "#ff9a4a", late: "#ff9a4a", miss: "#ff5a3c", info: "#f3e9dc" };
+const audioLat = () => (rig ? rig.ctx.outputLatency || rig.ctx.baseLatency || 0 : 0);
+const popup = (text, kind = "info") => T.popups.push({ text, kind, t: performance.now() });
+
+function expectedPadName() {
+  if (T.active) return T.kind === "pads" && T.pads && !S.hideHint ? T.pads.seq[T.pads.i]?.name : null;
+  return S.song.seq.length ? S.song.seq[S.pos % S.song.seq.length].chord.name : null;
+}
+
+function coach({ text, tip = "", step = "", buttons = [] }) {
+  $("#cTitle").textContent = T.lesson.title;
+  $("#cStep").textContent = step;
+  $("#cText").textContent = text;
+  $("#cTip").textContent = tip;
+  $("#cBtns").replaceChildren(...buttons.map(b => {
+    const el = document.createElement("button");
+    el.textContent = b.label;
+    if (b.ghost) el.className = "ghost";
+    el.onclick = () => { el.blur(); b.fn(); };
+    return el;
+  }));
+}
+
+function openTrainMenu() {
+  exitLesson(false);
+  stopAll();
+  T.lessons = buildLessons(S.song);
+  $("#tmSong").textContent = S.song.title;
+  $("#tmIntro").textContent = songIntro(S.song);
+  $("#lessonList").replaceChildren(...T.lessons.map((L, i) => {
+    const pr = progress.get(L.global ? "_all" : S.song.title, L.id);
+    const li = document.createElement("li");
+    const st = document.createElement("div"); st.className = "st"; st.textContent = pr?.done ? "✓" : String(i + 1);
+    const mid = document.createElement("div");
+    const t = document.createElement("div"); t.className = "t"; t.textContent = L.title;
+    const d = document.createElement("div"); d.className = "d"; d.textContent = L.desc;
+    mid.append(t, d);
+    if (pr?.best != null) {
+      const b = document.createElement("div"); b.className = "best";
+      b.textContent = `best ${Math.round(pr.best * 100)}%` + (pr.speed ? ` · passed at ${Math.round(pr.speed * 100)}% speed` : "");
+      mid.append(b);
+    }
+    const btn = document.createElement("button");
+    btn.textContent = pr?.done ? "AGAIN" : "START";
+    if (pr?.done) btn.className = "ghost";
+    btn.onclick = () => startLesson(i);
+    li.append(st, mid, btn);
+    return li;
+  }));
+  $("#trainMenu").classList.add("show");
+}
+function closeTrainMenu() { $("#trainMenu").classList.remove("show"); }
+
+function applySetup() {
+  const n = LESSON_NOTES[S.song.title]?.setup;
+  if (!n || T.setupFor === S.song.title) return;
+  T.setupFor = S.song.title;
+  S.sound = n.sound; $("#sound").value = n.sound; rig.setSound(n.sound);
+  S.pattern = n.pattern; $("#pattern").value = n.pattern;
+  S.brightT = n.bright;
+}
+
+function startLesson(i) {
+  closeTrainMenu();
+  ensureRig(); clearHw(); stopAll();
+  const L = T.lessons[i];
+  Object.assign(T, { active: true, idx: i, lesson: L, kind: L.kind, finished: false, step: 0, okAt: 0, popups: [], pads: null });
+  T.token++;
+  if (T.prevMode == null) T.prevMode = S.mode;
+  applySetup();
+  $("#coach").classList.add("show");
+  if (L.kind === "gestures") gestureShow();
+  else if (L.kind === "chords") { T.chordI = 0; T.chordN = 0; chordShow(); }
+  else if (L.kind === "highway") {
+    const pr = progress.get(S.song.title, L.id);
+    T.speed = pr?.speed ? Math.min(1, +(pr.speed + 0.2).toFixed(1)) : L.startSpeed;
+    hwIntro();
+  } else if (L.kind === "pads") padsStart();
+}
+
+function exitLesson(showMenu = true) {
+  clearHw();
+  if (T.active) stopAll();
+  T.active = false; T.lesson = null; T.pads = null; T.token++;
+  S.hideHint = false;
+  if (T.prevMode != null) { setMode(T.prevMode); T.prevMode = null; }
+  $("#coach").classList.remove("show");
+  if (rig && S.song) rig.setBpm(S.song.bpm);
+  if (showMenu) openTrainMenu();
+}
+
+function lessonDone({ text, tip = "", acc = null, speed = null, pass = true, retry = null, faster = null }) {
+  T.finished = true;
+  const L = T.lesson, key = L.global ? "_all" : S.song.title, prev = progress.get(key, L.id) || {};
+  const rec = { ...prev };
+  if (acc != null) rec.best = Math.max(prev.best || 0, acc);
+  if (speed != null && pass) rec.speed = Math.max(prev.speed || 0, speed);
+  if (pass && (speed == null || speed >= 1)) rec.done = true;
+  progress.set(key, L.id, rec);
+  const buttons = [];
+  if (retry) buttons.push({ label: "↻ Try again", fn: retry, ghost: pass && !faster });
+  if (faster) buttons.push({ label: `Faster: ${Math.round(faster * 100)}%`, fn: () => { T.speed = faster; hwStart(); } });
+  if (T.idx < T.lessons.length - 1) buttons.push({ label: "Next lesson →", fn: () => startLesson(T.idx + 1), ghost: !pass || !!faster });
+  buttons.push({ label: "All lessons", ghost: true, fn: () => exitLesson(true) });
+  coach({ step: "Done", text, tip, buttons });
+}
+
+// input from the hands / keyboard while a lesson is open
+function trainPinch(fromCam) {
+  if (!T.active) return false;
+  if (T.finished) return T.kind === "pads" ? !fromCam : true;
+  switch (T.kind) {
+    case "gestures": trigger(S.song.pads[0]); T.holdStart = performance.now(); gestureCheck("pinch"); return true;
+    case "chords": { const c = S.song.pads[T.chordI]; if (c) { trigger(c); T.chordN++; } return true; }
+    case "highway": hwPinch(fromCam); return true;
+    case "pads": return !fromCam; // camera pinches pick the hovered pad; Space can't cheat here
+  }
+  return true;
+}
+function trainRelease() {
+  if (!T.active || T.finished) return;
+  if (T.kind === "gestures") { gestureCheck("release"); T.holdStart = 0; }
+  if (T.kind === "chords" && T.chordN >= 2) {
+    const tok = ++T.token;
+    setTimeout(() => { if (tok === T.token && T.kind === "chords") chordNext(); }, 450);
+  }
+}
+function trainEvent(ev) { if (T.active && T.kind === "gestures" && !T.finished) gestureCheck(ev); }
+
+/* lesson: gestures */
+const GESTURES = [
+  { icon: "✋", say: "Hold up your PLAY hand on the right side of the screen.", keys: "no camera, skipping", test: () => !camOn || !!S.play },
+  { icon: "🤏", say: "Pinch your thumb and index finger together. That plays a chord.", keys: "press Space", test: ev => ev === "pinch" },
+  { icon: "⏳", say: "Keep pinching for 2 seconds. The chord rings for as long as you hold.", keys: "hold Space", test: () => T.holdStart && performance.now() - T.holdStart > 2000 },
+  { icon: "🖐", say: "Now open your fingers to release.", keys: "let go of Space", test: ev => ev === "release" || !T.holdStart },
+  { icon: "🤚", say: "Show your OTHER hand on the left side.", keys: "no camera, skipping", test: () => !camOn || !!S.expr },
+  { icon: "⬆", say: "Raise that hand up high. The tone gets brighter (watch the bar).", keys: "press ↑", test: () => S.brightT > 0.8 },
+  { icon: "⬇", say: "Lower it down. Darker, softer tone.", keys: "press ↓", test: () => S.brightT < 0.25 },
+  { icon: "↩", say: "Pinch with that hand. It steps back one chord in songs (handy for retrying a bit).", keys: "press ←", test: ev => ev === "back" },
+  { icon: "✊", say: "Make a fist with that hand. It stops all sound instantly.", keys: "press X", test: ev => ev === "stop" },
+];
+function gestureShow() {
+  const s = GESTURES[T.step];
+  coach({ step: `Step ${T.step + 1} of ${GESTURES.length}`, text: s.say, tip: camOn ? "" : `Keyboard: ${s.keys}`,
+    buttons: [{ label: "Skip step", ghost: true, fn: gestureNext }] });
+}
+function gestureCheck(ev) {
+  if (T.okAt || T.step >= GESTURES.length) return;
+  if (GESTURES[T.step].test(ev)) {
+    T.okAt = performance.now();
+    popup("✓", "perfect");
+    const tok = T.token;
+    setTimeout(() => { if (tok === T.token) gestureNext(); }, 650);
+  }
+}
+function gestureNext() {
+  T.token++; T.okAt = 0; T.step++;
+  if (T.step >= GESTURES.length) {
+    releaseHeld();
+    return lessonDone({ text: "Gestures done! That's everything you need to play.", tip: "Next: meet the chords of this song." });
+  }
+  gestureShow();
+}
+
+/* lesson: meet the chords */
+function chordShow() {
+  const c = S.song.pads[T.chordI];
+  coach({ step: `Chord ${T.chordI + 1} of ${S.song.pads.length}`, text: `This is ${c.name}. Pinch to play it, twice.`,
+    tip: chordTip(S.song, c), buttons: [{ label: "Next chord", ghost: true, fn: chordNext }] });
+}
+function chordNext() {
+  T.token++; T.chordI++; T.chordN = 0;
+  if (T.chordI >= S.song.pads.length) {
+    return lessonDone({ text: "You've met every chord in this song.", tip: "Next: practise each section in time, starting slow." });
+  }
+  chordShow();
+}
+
+/* lesson: play-along highway */
+function hwIntro() {
+  clearHw(); stopAll(); T.finished = false;
+  const L = T.lesson;
+  coach({
+    step: `Speed ${Math.round(T.speed * 100)}% · ${Math.round(S.song.bpm * T.speed)} BPM`,
+    text: "Chords slide toward the line. Pinch just as each one reaches it, and hold to let it ring. Pinch now to start.",
+    tip: L.id === "full" ? fullTip(S.song) : sectionTip(S.song, L),
+    buttons: [
+      { label: "▶ Start", fn: hwStart },
+      ...[0.6, 0.8, 1].map(s => ({ label: `${Math.round(s * 100)}%`, ghost: s !== T.speed, fn: () => { T.speed = s; hwIntro(); } })),
+      { label: T.metro ? "Clicks: on" : "Clicks: off", ghost: true, fn: () => { T.metro = !T.metro; hwIntro(); } },
+    ],
+  });
+}
+function hwStart() {
+  ensureRig(); clearHw(); stopAll(); T.finished = false;
+  const L = T.lesson, bpm = S.song.bpm * T.speed, beatDur = 60 / bpm, beats = S.song.beats || 4, chordDur = beats * beatDur;
+  rig.setBpm(bpm);
+  const now = rig.ctx.currentTime, t0 = now + 0.4 + 4 * beatDur;
+  rig.step = 0; rig.next = t0; // line arpeggios / drums up with the chart
+  T.hw = {
+    t0, beatDur, beats, chordDur, end: t0 + L.chords.length * chordDur, nextClick: now + 0.4, clickN: 0,
+    targets: L.chords.map((c, i) => ({ chord: c, t: t0 + i * chordDur, dur: chordDur, sec: L.sections?.[i] || "", res: null })),
+  };
+  T.timer = setInterval(hwSchedule, 25);
+  coach({ step: `Speed ${Math.round(T.speed * 100)}%`, text: "Get ready. Four clicks count you in, then pinch on each chord.",
+    tip: "Tip: pinch on the beat you hear, not when the block looks close.", buttons: [{ label: "■ Stop", ghost: true, fn: hwIntro }] });
+}
+function hwSchedule() {
+  const hw = T.hw;
+  if (!hw) return;
+  const now = rig.ctx.currentTime;
+  while (hw.nextClick < now + 0.12 && hw.nextClick < hw.end - 1e-3) {
+    const n = hw.clickN++, countIn = n < 4;
+    if (countIn || T.metro) rig.click(hw.nextClick, countIn ? n === 0 : (n - 4) % hw.beats === 0, countIn);
+    hw.nextClick += hw.beatDur;
+  }
+}
+function clearHw() { if (T.timer) clearInterval(T.timer); T.timer = null; T.hw = null; }
+function hwPinch(fromCam) {
+  const hw = T.hw;
+  if (!hw) return hwStart();
+  // judge against what you heard: subtract audio output delay (+ camera delay for hand input)
+  const now = rig.ctx.currentTime - audioLat() - (fromCam ? 0.07 : 0);
+  let best = null, bd = 0;
+  for (const tg of hw.targets) {
+    if (tg.res) continue;
+    const d = now - tg.t;
+    if (d > 0.35) { tg.res = "miss"; continue; }
+    if (d >= -Math.min(0.45, tg.dur * 0.5)) { best = tg; bd = d; }
+    break;
+  }
+  if (!best) return popup("too early", "early");
+  const a = Math.abs(bd);
+  best.res = a <= 0.09 ? "perfect" : a <= 0.2 ? "good" : bd < 0 ? "early" : "late";
+  trigger(best.chord);
+  popup(best.res, best.res);
+}
+function hwFinish() {
+  const hw = T.hw;
+  clearHw(); releaseHeld(); rig.setBpm(S.song.bpm);
+  const n = hw.targets.length, cnt = k => hw.targets.filter(t => t.res === k).length;
+  const acc = hw.targets.reduce((s, t) => s + (PTS[t.res] || 0), 0) / n, pass = acc >= 0.75;
+  const stars = acc >= 0.9 ? "★★★" : acc >= 0.75 ? "★★☆" : acc >= 0.5 ? "★☆☆" : "☆☆☆";
+  const faster = pass && T.speed < 1 ? Math.min(1, +(T.speed + 0.2).toFixed(1)) : null;
+  const early = cnt("early"), late = cnt("late");
+  lessonDone({
+    acc, speed: T.speed, pass, retry: hwStart, faster,
+    text: `${stars}  ${Math.round(acc * 100)}%: ` + (pass ? (T.speed < 1 ? "passed! Now try it faster." : "nailed it at full speed!") : "almost there. 75% passes, so give it another go."),
+    tip: `Perfect ${cnt("perfect")} · Good ${cnt("good")} · Early/late ${early + late} · Missed ${cnt("miss")}` +
+      (late > early + 2 ? ". You're mostly late, so pinch a touch earlier." : early > late + 2 ? ". You're mostly early, so wait for the line." : ""),
+  });
+}
+
+/* lesson: pads from memory */
+function padsStart() {
+  T.finished = false;
+  let seq = practiceGroups(S.song.seq).flatMap(gp => gp.unit);
+  if (seq.length < 4) seq = S.song.seq.slice(0, 16).map(x => x.chord);
+  T.pads = { seq, i: 0, pass: 1, correct: 0, wrong: 0 };
+  setMode("pads"); S.hideHint = false;
+  padsShow();
+}
+function padsShow() {
+  const p = T.pads;
+  coach({
+    step: `Pass ${p.pass} of 2 · chord ${p.i + 1} of ${p.seq.length}`,
+    text: p.pass === 1 ? "Point at the glowing pad and pinch it, following the song order." : "Now from memory. No glowing hints. Which chord comes next?",
+    tip: (camOn ? "" : `Keyboard: press 1–${S.song.pads.length} for the pads. `) + `Mistakes: ${p.wrong}`,
+    buttons: [{ label: "Show answer", ghost: true, fn: () => popup(p.seq[p.i].name, "good") }],
+  });
+}
+function padsPad(i) {
+  const pad = S.song.pads[i];
+  if (!pad) return;
+  trigger(pad); S.activePad = i;
+  const p = T.pads;
+  if (!p || T.finished) return;
+  if (pad.name === p.seq[p.i].name) {
+    p.correct++; p.i++; popup("✓", "perfect");
+    if (p.i >= p.seq.length) {
+      if (p.pass === 2) return padsFinish();
+      p.pass = 2; p.i = 0; S.hideHint = true; popup("no hints now", "info");
+    }
+  } else { p.wrong++; popup("✗ " + pad.name, "miss"); }
+  padsShow();
+}
+function padsFinish() {
+  const p = T.pads, acc = p.correct / (p.correct + p.wrong);
+  S.hideHint = true;
+  lessonDone({ acc, pass: acc >= 0.8, retry: padsStart,
+    text: `${Math.round(acc * 100)}% correct: ` + (acc >= 0.8 ? "you know this song!" : "getting there. 80% passes."),
+    tip: `${p.wrong} mistake${p.wrong === 1 ? "" : "s"} across both passes.` });
+}
+
+// runs on a timer (not the draw loop) so lesson logic keeps working even when frames are throttled
+setInterval(() => { try { trainFrame(); } catch (e) { console.error(e); } }, 40);
+function trainFrame() {
+  if (!T.active) return;
+  if (T.kind === "gestures" && !T.finished) gestureCheck(null);
+  const hw = T.hw;
+  if (hw) {
+    const now = rig.ctx.currentTime - audioLat();
+    for (const tg of hw.targets) if (!tg.res && now - tg.t > 0.35) { tg.res = "miss"; popup("miss", "miss"); }
+    if (rig.ctx.currentTime > hw.end + 0.4) hwFinish();
+  }
+}
+
+/* training render */
+function drawTraining() {
+  const y0 = $("#coach").getBoundingClientRect().bottom + 14, y1 = BOT;
+  const [px0, px1] = playSide(), [ex0, ex1] = exprSide();
+  if (T.kind === "highway") drawHighway(y0, y1);
+  else if (T.kind === "pads") { drawPads(px0 + 8, px1 - 16, y0, y1); drawTone(ex0 + 16, ex1 - 16, y0, y1); }
+  else if (T.kind === "chords") drawChordCard(y0, y1);
+  else if (T.kind === "gestures") { drawGestureCard(y0, y1); drawTone(ex0 + 16, ex1 - 16, y0, y1); }
+  drawPopups(y0, y1);
+}
+
+function drawGestureCard(y0, y1) {
+  const cx = W / 2, cy = (y0 + y1) / 2, s = GESTURES[Math.min(T.step, GESTURES.length - 1)];
+  g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = "#fff";
+  g.font = `${clamp((y1 - y0) * 0.3, 48, 140)}px serif`;
+  g.fillText(T.finished ? "🎸" : s.icon, cx, cy - 10);
+  g.textBaseline = "alphabetic";
+  for (let i = 0; i < GESTURES.length; i++) {
+    g.beginPath(); g.arc(cx + (i - (GESTURES.length - 1) / 2) * 20, y1 - 20, 5, 0, 7);
+    g.fillStyle = i < T.step || T.finished ? "#ffb02e" : i === T.step ? "rgba(255,176,46,0.45)" : "rgba(255,255,255,0.12)";
+    g.fill();
+  }
+}
+
+function drawChordCard(y0, y1) {
+  const c = S.song.pads[T.chordI];
+  if (!c) return;
+  const cx = W / 2, cy = (y0 + y1) / 2, size = clamp((y1 - y0) * 0.36, 56, 180);
+  g.textAlign = "center";
+  g.font = `600 ${size}px Oswald`;
+  g.fillStyle = "#ffb02e"; g.shadowColor = "#ff5a1f"; g.shadowBlur = 20 + 30 * S.flash;
+  g.fillText(c.name, cx, cy + size * 0.25);
+  g.shadowBlur = 0;
+  g.font = "13px JetBrains Mono, monospace"; g.fillStyle = "rgba(243,233,220,0.6)";
+  g.fillText("notes: " + noteList(c), cx, cy + size * 0.25 + 30);
+  for (let i = 0; i < 2; i++) {
+    g.beginPath(); g.arc(cx - 12 + i * 24, cy + size * 0.25 + 56, 7, 0, 7);
+    g.fillStyle = i < T.chordN ? "#ffb02e" : "rgba(255,255,255,0.12)"; g.fill();
+  }
+}
+
+function drawHighway(y0, y1) {
+  const hw = T.hw, beats = S.song.beats || 4;
+  const laneH = clamp((y1 - y0) * 0.3, 70, 130), ly = y0 + (y1 - y0) * 0.42 - laneH / 2, hitX = Math.max(90, W * 0.2);
+  const beatDur = hw ? hw.beatDur : 60 / (S.song.bpm * T.speed), chordDur = beats * beatDur;
+  const pps = clamp(W / 14, 38, 100) / beatDur;
+  const t0 = hw ? hw.t0 : 0, now = hw ? rig.ctx.currentTime - audioLat() : -2 * beatDur;
+  const targets = hw ? hw.targets
+    : T.lesson.chords.map((c, i) => ({ chord: c, t: i * chordDur, dur: chordDur, sec: T.lesson.sections?.[i] || "", res: null }));
+
+  rrect(8, ly, W - 16, laneH, 12); g.fillStyle = "rgba(255,255,255,0.035)"; g.fill();
+
+  // beat grid (bar lines brighter)
+  const firstB = Math.floor((now - hitX / pps - t0) / beatDur), lastB = Math.ceil((now + (W - hitX) / pps - t0) / beatDur);
+  for (let b = Math.max(-4, firstB); b <= lastB; b++) {
+    const x = hitX + (t0 + b * beatDur - now) * pps;
+    if (x < 8 || x > W - 8) continue;
+    g.strokeStyle = ((b % beats) + beats) % beats === 0 ? "rgba(255,176,46,0.22)" : "rgba(255,255,255,0.06)";
+    g.lineWidth = 1; g.beginPath(); g.moveTo(x, ly + 4); g.lineTo(x, ly + laneH - 4); g.stroke();
+  }
+
+  // chord blocks
+  let prevSec = null;
+  for (const tg of targets) {
+    const x = hitX + (tg.t - now) * pps, w = tg.dur * pps - 6;
+    if (tg.sec !== prevSec) {
+      prevSec = tg.sec;
+      if (tg.sec && x > 8 && x < W - 60) {
+        g.font = "10px JetBrains Mono, monospace"; g.textAlign = "left"; g.fillStyle = "rgba(255,176,46,0.8)";
+        g.fillText(tg.sec.toUpperCase(), x + 3, ly - 8);
+      }
+    }
+    if (x > W - 8 || x + w < 8) continue;
+    rrect(x + 3, ly + 8, w, laneH - 16, 8);
+    g.fillStyle = { perfect: "rgba(255,211,110,0.5)", good: "rgba(255,176,46,0.38)", early: "rgba(255,154,74,0.28)",
+      late: "rgba(255,154,74,0.28)", miss: "rgba(255,90,60,0.14)" }[tg.res] || "rgba(255,176,46,0.10)";
+    g.fill();
+    g.strokeStyle = tg.res === "miss" ? "rgba(255,90,60,0.6)" : tg.res ? "rgba(255,176,46,0.3)" : "rgba(255,176,46,0.75)";
+    g.lineWidth = tg.res ? 1 : 2; g.stroke();
+    g.font = `600 ${laneH * 0.36}px Oswald`; g.textAlign = "left";
+    g.fillStyle = tg.res === "miss" ? "rgba(255,120,90,0.7)" : "#f3e9dc";
+    g.fillText(tg.chord.name, x + 14, ly + laneH / 2 + laneH * 0.13);
+  }
+
+  // hit line
+  g.strokeStyle = "rgba(255,176,46,0.95)"; g.lineWidth = 3; g.shadowColor = "#ff5a1f"; g.shadowBlur = 16;
+  g.beginPath(); g.moveTo(hitX, ly - 14); g.lineTo(hitX, ly + laneH + 14); g.stroke(); g.shadowBlur = 0;
+  g.font = "11px JetBrains Mono, monospace"; g.textAlign = "center"; g.fillStyle = "rgba(243,233,220,0.6)";
+  g.fillText("PINCH HERE", hitX, ly + laneH + 30);
+  T.hitX = hitX; T.hitY = ly;
+
+  if (!hw) {
+    if (!T.finished) {
+      g.font = "600 20px Oswald"; g.fillStyle = "rgba(243,233,220,0.85)";
+      g.fillText("PINCH TO START", W / 2, ly - 28);
+    }
+    return;
+  }
+  if (now < hw.t0) {
+    const n = Math.min(4, Math.ceil((hw.t0 - now) / beatDur));
+    g.font = `600 ${laneH * 0.9}px Oswald`; g.fillStyle = "rgba(255,176,46,0.9)";
+    g.fillText(String(n), W / 2, ly - 22);
+  }
+  const nx = hw.targets.find(t => !t.res);
+  if (nx) {
+    const away = Math.ceil(Math.max(0, (nx.t - now) / beatDur));
+    g.font = "13px JetBrains Mono, monospace"; g.fillStyle = "rgba(243,233,220,0.7)";
+    g.fillText(`next: ${nx.chord.name}  ·  ${away <= 0 ? "NOW" : `in ${away} beat${away === 1 ? "" : "s"}`}`, W / 2, ly + laneH + 56);
+  }
+  const done = hw.targets.filter(t => t.res).length, sc = hw.targets.reduce((s, t) => s + (PTS[t.res] || 0), 0);
+  rrect(16, y1 - 8, W - 32, 4, 2); g.fillStyle = "rgba(255,255,255,0.08)"; g.fill();
+  rrect(16, y1 - 8, (W - 32) * done / hw.targets.length, 4, 2); g.fillStyle = "#ffb02e"; g.fill();
+  g.font = "11px JetBrains Mono, monospace"; g.textAlign = "right"; g.fillStyle = "rgba(243,233,220,0.6)";
+  g.fillText(`${done}/${hw.targets.length}  ·  score ${done ? Math.round(sc / done * 100) : 0}%`, W - 16, y1 - 16);
+}
+
+function drawPopups(y0, y1) {
+  const now = performance.now();
+  T.popups = T.popups.filter(p => now - p.t < 900);
+  for (const p of T.popups) {
+    const k = (now - p.t) / 900, hwy = T.kind === "highway";
+    const x = hwy ? T.hitX : W / 2, y = (hwy ? T.hitY - 26 : y0 + 40) - k * 28;
+    g.globalAlpha = 1 - k;
+    g.font = `600 ${hwy ? 24 : 32}px Oswald`; g.textAlign = "center";
+    g.fillStyle = POP_COL[p.kind] || "#ffb02e";
+    g.fillText(p.text.toUpperCase(), x, y);
+    g.globalAlpha = 1;
+  }
+}
+
+/* ───────────────────────── UI wiring ───────────────────────── */
+fillSongs();
+loadSong(0);
+requestAnimationFrame(frame);
+
+// clicked controls shouldn't keep focus, or Space (next chord) would re-trigger them
+addEventListener("click", e => { if (e.target.matches("header button, header input[type=checkbox]")) e.target.blur(); });
+document.querySelectorAll("header select").forEach(s => s.addEventListener("change", () => s.blur()));
+
+$("#startCam").onclick = startCamera;
+$("#startKeys").onclick = () => { ensureRig(); $("#intro").style.display = "none"; $("#status").textContent = "keyboard mode"; };
+$("#song").onchange = e => { exitLesson(false); closeTrainMenu(); stopAll(); loadSong(+e.target.value); };
+$("#trainBtn").onclick = () => { ensureRig(); $("#intro").style.display = "none"; openTrainMenu(); };
+$("#tmClose").onclick = closeTrainMenu;
+$("#cExit").onclick = () => exitLesson(true);
+$("#modeSeg").onclick = e => { const v = e.target.dataset.v; if (v) setMode(v); };
+function setMode(v) {
+  S.mode = v;
+  document.querySelectorAll("#modeSeg button").forEach(b => b.classList.toggle("sel", b.dataset.v === v));
+}
+$("#sound").onchange = e => {
+  S.sound = e.target.value; ensureRig(); rig.setSound(S.sound);
+  S.pattern = DEFAULT_PATTERN[S.sound]; $("#pattern").value = S.pattern;
+};
+$("#pattern").value = S.pattern;
+$("#pattern").onchange = e => { S.pattern = e.target.value; };
+$("#bpm").oninput = e => { $("#bpmV").textContent = e.target.value; rig?.setBpm(+e.target.value); };
+$("#drumsBtn").onclick = toggleDrums;
+function toggleDrums() {
+  ensureRig();
+  rig.setDrums(!rig.drumsOn);
+  $("#drumsBtn").classList.toggle("on", rig.drumsOn);
+  $("#drumsBtn").textContent = rig.drumsOn ? "■ DRUMS" : "▶ DRUMS";
+}
+$("#lefty").onchange = e => { S.lefty = e.target.checked; };
+
+// add / delete custom songs
+const dlg = $("#addDlg");
+$("#addSong").onclick = () => {
+  $("#fTitle").value = ""; $("#fChords").value = ""; $("#fBpm").value = 100; $("#fBeats").value = 4;
+  checkParse(); dlg.showModal();
+};
+function checkParse() {
+  const { seq, bad } = parseSong($("#fChords").value), info = $("#parseInfo");
+  info.className = bad.length ? "bad" : "";
+  info.textContent = bad.length ? `Didn't understand: ${bad.slice(0, 8).join(" ")}` : seq.length ? `${seq.length} chords ✓` : "";
+  $("#fSave").disabled = !seq.length;
+}
+$("#fChords").oninput = checkParse;
+// save on submit (fires reliably and synchronously; the dialog "close" event doesn't everywhere)
+$("#addForm").addEventListener("submit", e => {
+  if (e.submitter?.value !== "save") return;
+  const title = $("#fTitle").value.trim() || "My song", text = $("#fChords").value;
+  if (!parseSong(text).seq.length) return;
+  custom.push({ title, bpm: clamp(+$("#fBpm").value || 100, 40, 220), beats: clamp(+$("#fBeats").value || 4, 1, 16), text });
+  store.set(custom);
+  fillSongs(); loadSong(allSongs().length - 1);
+});
+$("#delSong").onclick = () => {
+  const i = S.songIdx - BUILTIN.length;
+  if (i < 0 || !confirm(`Delete "${custom[i].title}"?`)) return;
+  custom.splice(i, 1); store.set(custom);
+  fillSongs(); loadSong(0);
+};
+
+addEventListener("keydown", e => {
+  const el = e.target instanceof Element ? e.target : null;
+  if (dlg.open || el?.closest("input[type=text], input[type=number], textarea, select")) return;
+  if (el?.matches("input[type=range]") && e.key.startsWith("Arrow")) return;
+  if (e.repeat) return;
+  if (e.key === "Escape") {
+    if ($("#trainMenu").classList.contains("show")) closeTrainMenu();
+    else if (T.active) exitLesson(true);
+    return;
+  }
+  if ($("#trainMenu").classList.contains("show")) return;
+  const digit = /^Digit([1-9])$/.exec(e.code);
+  if (digit) { playPad(+digit[1] - 1); return; }
+  switch (e.code === "Space" ? " " : e.key) {
+    case " ": e.preventDefault(); onPinch(false); break;
+    case "ArrowLeft": case "Backspace": e.preventDefault(); onBack(); break;
+    case "ArrowRight": e.preventDefault(); if (!T.active) skip(); break;
+    case "ArrowUp": e.preventDefault(); S.brightT = clamp(S.brightT + 0.1, 0, 1); break;
+    case "ArrowDown": e.preventDefault(); S.brightT = clamp(S.brightT - 0.1, 0, 1); break;
+    default:
+      switch (e.key.toLowerCase()) {
+        case "r": if (!T.active) restart(); break;
+        case "m": if (!T.active) setMode(S.mode === "song" ? "pads" : "song"); break;
+        case "x": onStop(); break;
+        case "d": toggleDrums(); break;
+        case "t": if (!T.active) openTrainMenu(); break;
+      }
+  }
+});
+addEventListener("keyup", e => { if (e.code === "Space" || /^Digit[1-9]$/.test(e.code)) onRelease(); });
+</script>
+</body>
+</html>
