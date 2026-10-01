@@ -40,6 +40,24 @@
   .seg button { background: transparent; color: var(--dim); border-radius: 0; padding: 6px 10px; }
   .seg button.sel { background: var(--amber); color: var(--bg); }
   #status { margin-left: auto; color: var(--dim); }
+  #more { display: contents; }
+  #moreBtn { display: none; }
+  #stage { touch-action: none; }
+  footer .touch { display: none; }
+  @media (pointer: coarse) { footer .keys { display: none; } footer .touch { display: inline; } }
+  /* phones / narrow windows: essentials up top, everything else behind ☰ */
+  @media (max-width: 760px) {
+    header { gap: 8px; padding: 8px 12px; }
+    header h1 { font-size: 22px; }
+    #song { max-width: 44vw; }
+    #moreBtn { display: inline-block; margin-left: auto; padding: 6px 12px; }
+    #more { display: none; }
+    header.open #more { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; width: 100%; padding-top: 4px; }
+    #status { margin-left: 0; width: 100%; }
+    footer { padding: 8px 12px; font-size: 10px; gap: 4px 14px; }
+    footer .keys, footer .hand2 { display: none; }
+    footer .touch { display: inline; }
+  }
 
   footer { position: fixed; bottom: 0; left: 0; right: 0; padding: 10px 16px; font-size: 11px; color: var(--dim);
     background: linear-gradient(transparent, var(--panel)); z-index: 2; display: flex; flex-wrap: wrap; gap: 6px 22px; }
@@ -99,7 +117,13 @@
   #lessonList .t { font-weight: 600; font-size: 13px; }
   #lessonList .d { color: var(--dim); font-size: 11px; margin-top: 2px; overflow-wrap: anywhere; }
   #lessonList .best { color: var(--amber); font-size: 11px; margin-top: 2px; }
-  #trainMenu .foot { display: flex; justify-content: flex-end; margin-top: 14px; }
+  #trainMenu .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; }
+  #tmStats { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 0 0 14px; font-size: 12px; color: var(--dim); line-height: 1.6; }
+  #tmStats b { color: var(--ink); font-weight: 600; }
+  #tmStats .bars { display: inline-flex; align-items: flex-end; gap: 3px; height: 22px; vertical-align: middle; margin: 0 6px; }
+  #tmStats .bars i { display: block; width: 8px; background: var(--amber); border-radius: 2px; opacity: .85; }
+  #tmStats .tr { color: var(--ink); }
+  #tmReset { font-size: 11px; padding: 5px 9px; }
 </style>
 </head>
 <body>
@@ -110,6 +134,8 @@
   <h1>ROCK FINGERS</h1>
   <select id="song" title="Song"></select>
   <button id="trainBtn" title="Step-by-step lessons for this song">🎓 TRAIN</button>
+  <button id="moreBtn" class="ghost" aria-expanded="false" aria-controls="more" title="More controls">☰</button>
+  <div id="more">
   <button id="addSong" class="ghost" title="Add your own song">＋ SONG</button>
   <button id="delSong" class="ghost" hidden>DELETE</button>
   <div class="seg" id="modeSeg" title="Song: every pinch plays the next chord. Pads: pick chords yourself.">
@@ -123,14 +149,17 @@
   </select></label>
   <label>BPM <input id="bpm" type="range" min="50" max="190" value="100"><span id="bpmV">100</span></label>
   <button id="drumsBtn" class="ghost">▶ DRUMS</button>
+  <button id="backBtn" class="ghost" title="Bass and drums play the song; you play along">▶ BACKING</button>
   <label><input id="lefty" type="checkbox"> lefty</label>
   <span id="status">amp off</span>
+  </div>
 </header>
 
 <footer id="ftr">
-  <span><b>Play hand</b> pinch = play next chord (hold to let it ring)</span>
-  <span><b>Other hand</b> height = tone · pinch = go back · fist = stop</span>
-  <span><kbd>Space</kbd> next chord · <kbd>1</kbd>–<kbd>9</kbd> pads · <kbd>←</kbd> back · <kbd>R</kbd> restart · <kbd>M</kbd> mode · <kbd>X</kbd> stop · <kbd>D</kbd> drums · <kbd>T</kbd> train</span>
+  <span><b>Play hand</b> pinch = play chord (hold to keep it going)</span>
+  <span class="hand2"><b>Other hand</b> height = tone · tilt = vibrato · spread = space · pinch = back · fist = stop</span>
+  <span class="keys"><kbd>Space</kbd> play · <kbd>1</kbd>–<kbd>9</kbd> pads · <kbd>←</kbd> back · <kbd>↑↓</kbd> tone · <kbd>V</kbd> vibrato · <kbd>[</kbd><kbd>]</kbd> space · <kbd>B</kbd> backing · <kbd>D</kbd> drums · <kbd>M</kbd> mode · <kbd>T</kbd> train · <kbd>X</kbd> stop</span>
+  <span class="touch">No camera? Tap the circle or pads to play · drag the tone bar</span>
 </footer>
 
 <div id="intro">
@@ -140,12 +169,13 @@
     <ol>
       <li><b>Pick a song</b> at the top, or add your own by typing its chords. New to it? Hit <b>🎓 TRAIN</b> for step-by-step lessons.</li>
       <li><b>Pinch</b> (thumb + index) with your play hand to play the next chord. Hold the pinch to keep it ringing.</li>
-      <li><b>Other hand</b>: raise it for a brighter tone, pinch to go back a chord, make a fist to stop.</li>
+      <li><b>Other hand</b> shapes the sound: raise it for brighter tone, tilt it for vibrato, spread your fingers for more space (echo + reverb). Pinch to go back a chord, fist to stop.</li>
+      <li><b>▶ BACKING</b> plays bass and drums so you can play along with the whole song.</li>
       <li>Know the song? Switch to <b>PADS</b> and pick the chords yourself, with the next one glowing.</li>
     </ol>
     <div class="row">
       <button id="startCam">START WITH CAMERA</button>
-      <button id="startKeys" class="ghost">KEYBOARD ONLY</button>
+      <button id="startKeys" class="ghost">NO CAMERA (TOUCH / KEYS)</button>
     </div>
     <p id="err"></p>
   </div>
@@ -163,8 +193,9 @@
     <h3>TRAINING</h3>
     <div class="song" id="tmSong"></div>
     <p id="tmIntro"></p>
+    <div id="tmStats"></div>
     <ul id="lessonList"></ul>
-    <div class="foot"><button id="tmClose" class="ghost">CLOSE</button></div>
+    <div class="foot"><button id="tmReset" class="ghost" title="Clear scores and stats for this song">RESET THIS SONG</button><button id="tmClose" class="ghost">CLOSE</button></div>
   </div>
 </div>
 
@@ -212,7 +243,7 @@ Bridge: Asus4 Asus4 A A
 Chorus: D A F#m F#m D A F#m E
 Outro: A` },
   // Guitar: Dmaj7 / D/B with capo 1 — written here at concert pitch
-  { title: "D>E>A>T>H>M>E>T>A>L — Panchiko", bpm: 88, beats: 4, patternName: "Slow, swaying strum", pattern: "D.....u.D...u...", text:
+  { title: "D>E>A>T>H>M>E>T>A>L — Panchiko", bpm: 88, beats: 4, capo: 1, shapes: { Ebmaj7: "Dmaj7", "Eb/C": "D/B" }, patternName: "Slow, swaying strum", pattern: "D.....u.D...u...", text:
 `Intro: Ebmaj7
 Verse: Ebmaj7 Eb/C x2
 Chorus: Ebmaj7 Eb/C x2
@@ -310,6 +341,8 @@ const SOUNDS = {
   synth:  { clean: 1, drive: 0, chorus: 0.6,  echo: 0.3,  verb: 0.45, drums: 0.45 },
   rock:   { clean: 0, drive: 1, chorus: 0,    echo: 0.08, verb: 0.15, drums: 0.75 },
 };
+// low strings slightly left, high strings slightly right
+const spread = (i, n) => (n > 1 ? (i / (n - 1) - 0.5) * 0.6 : 0);
 const DEFAULT_PATTERN = { guitar: "arp", synth: "strum", rock: "pulse" };
 
 class Rig {
@@ -326,13 +359,21 @@ class Rig {
     comp.connect(master); master.connect(c.destination);
     this.comp = comp;
 
-    // voices -> tone (hand-controlled brightness) -> clean or driven path -> fx
+    // voices -> vibrato -> tone (hand-controlled brightness) -> clean (+ guitar body) or driven path -> fx
     this.bus = c.createGain(); this.bus.gain.value = 0.7;
+    // vibrato = a tiny delay whose length wobbles, which bends the pitch of everything passing through
+    this.vib = c.createDelay(0.02); this.vib.delayTime.value = 0.005;
+    const vlfo = c.createOscillator(); this.vibDepth = c.createGain();
+    vlfo.frequency.value = 5.5; this.vibDepth.gain.value = 0;
+    vlfo.connect(this.vibDepth); this.vibDepth.connect(this.vib.delayTime); vlfo.start();
     this.tone = this.biq("lowpass", 6500, 0.5);
-    this.bus.connect(this.tone);
+    this.bus.connect(this.vib); this.vib.connect(this.tone);
     this.fx = c.createGain();
     this.cleanG = c.createGain();
-    this.tone.connect(this.cleanG); this.cleanG.connect(this.fx);
+    // acoustic body resonances + a little air on top (only switched on for the guitar sound)
+    this.body = [this.biq("peaking", 110, 1.2), this.biq("peaking", 240, 1.4), this.biq("highshelf", 6000)];
+    [this.tone, this.cleanG, ...this.body, this.fx].reduce((a, b) => (a.connect(b), b));
+    this.space = 0.36;
 
     this.shaper = c.createWaveShaper(); this.shaper.oversample = "4x";
     this.setDrive(30);
@@ -363,6 +404,9 @@ class Rig {
     this.verb = c.createConvolver(); this.verb.buffer = this.impulse(2.8);
     this.verbW = c.createGain();
     this.fx.connect(this.verb); this.verb.connect(this.verbW); this.verbW.connect(comp);
+
+    // backing-track bass
+    this.bassBus = c.createGain(); this.bassBus.gain.value = 0.5; this.bassBus.connect(comp);
 
     // drums
     this.dBus = c.createGain(); this.dBus.connect(comp);
@@ -405,9 +449,19 @@ class Rig {
     this.cleanG.gain.setTargetAtTime(p.clean, now, 0.03);
     this.driveG.gain.setTargetAtTime(p.drive * 0.45, now, 0.03);
     this.chorusW.gain.setTargetAtTime(p.chorus, now, 0.05);
-    this.echoW.gain.setTargetAtTime(p.echo, now, 0.05);
-    this.verbW.gain.setTargetAtTime(p.verb, now, 0.05);
     this.dBus.gain.setTargetAtTime(p.drums, now, 0.05);
+    const guitar = name === "guitar";
+    [3, 2, 2].forEach((db, i) => this.body[i].gain.setTargetAtTime(guitar ? db : 0, now, 0.05));
+    this.setSpace(this.space);
+  }
+
+  // expression: 0..1 from the other hand
+  setVibrato(v) { this.vibDepth.gain.setTargetAtTime(v * 0.001, this.ctx.currentTime, 0.05); }
+  setSpace(v) {
+    this.space = v;
+    const p = SOUNDS[this.sound], mul = 0.25 + 2.1 * v, now = this.ctx.currentTime; // v≈0.36 = the sound's normal mix
+    this.echoW.gain.setTargetAtTime(p.echo * mul, now, 0.08);
+    this.verbW.gain.setTargetAtTime(Math.min(1, p.verb * mul), now, 0.08);
   }
 
   setBpm(b) {
@@ -424,7 +478,11 @@ class Rig {
     const c = this.ctx, sr = c.sampleRate, f = 440 * 2 ** ((midi - 69) / 12);
     const N = Math.max(2, Math.round(sr / f - 0.5)), len = (sr * 2.8) | 0, ring = new Float32Array(N);
     let last = 0, mean = 0;
-    for (let i = 0; i < N; i++) { last = last * 0.35 + (Math.random() * 2 - 1) * 0.65; ring[i] = last; mean += last; }
+    const exc = new Float32Array(N);
+    for (let i = 0; i < N; i++) { last = last * 0.35 + (Math.random() * 2 - 1) * 0.65; exc[i] = last; }
+    // picking ~1/8 of the way along the string notches out some harmonics, like a real pick position
+    const P = Math.max(1, Math.round(N * 0.12));
+    for (let i = 0; i < N; i++) { ring[i] = exc[i] - 0.8 * exc[(i + P) % N]; mean += ring[i]; }
     mean /= N; for (let i = 0; i < N; i++) ring[i] -= mean;
     const buf = c.createBuffer(1, len, sr), d = buf.getChannelData(0);
     let idx = 0, peak = 0;
@@ -433,6 +491,9 @@ class Rig {
       d[i] = a; ring[idx] = 0.9987 * 0.5 * (a + ring[nx]); idx = nx;
       if (Math.abs(a) > peak) peak = Math.abs(a);
     }
+    // a few ms of pick scrape at the very start
+    const scrape = (sr * 0.004) | 0;
+    for (let i = 0; i < scrape; i++) d[i] += (Math.random() * 2 - 1) * peak * 0.25 * (1 - i / scrape);
     const fade = (sr * 0.4) | 0;
     for (let i = 0; i < len; i++) d[i] *= (0.6 / peak) * Math.min(1, (len - i) / fade);
     buf._rate = f / (sr / (N + 0.5));
@@ -453,11 +514,13 @@ class Rig {
     for (const s of v.srcs) { try { s.stop(t + tau * 8); } catch {} }
   }
 
-  pluck(midi, t, vel, len = 0) {
+  pluck(midi, t, vel, len = 0, pan = 0) {
     const c = this.ctx, src = c.createBufferSource(), buf = this.ks(midi), g = c.createGain();
     src.buffer = buf; src.playbackRate.value = buf._rate;
     g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vel, t + 0.003);
-    src.connect(g); g.connect(this.bus);
+    src.connect(g);
+    if (pan && c.createStereoPanner) { const p = c.createStereoPanner(); p.pan.value = pan; g.connect(p); p.connect(this.bus); }
+    else g.connect(this.bus);
     src.start(t);
     if (len) { g.gain.setTargetAtTime(0, t + len, len * 0.4); src.stop(t + len * 5); }
     return this.track(g, [src]);
@@ -489,8 +552,8 @@ class Rig {
     });
   }
 
-  note(midi, t, vel, len = 0) {
-    return this.sound === "synth" ? this.synthPluck(midi, t, vel) : this.pluck(midi, t, vel, len);
+  note(midi, t, vel, len = 0, pan = 0) {
+    return this.sound === "synth" ? this.synthPluck(midi, t, vel) : this.pluck(midi, t, vel, len, pan);
   }
 
   /* Song patterns: one character per step, spread over one 4-beat bar (16 chars = 16th notes,
@@ -510,35 +573,40 @@ class Rig {
     h.picked = [];
     const notes = dir > 0 ? h.notes : h.notes.slice(1).reverse(); // upstrokes skip the bass string
     const base = (this.sound === "rock" ? 0.4 : 0.3) * vel;
-    h.ring = notes.map((m, i) => this.note(m, t + i * (dir > 0 ? 0.012 : 0.009), base, short ? 0.1 : 0));
+    h.ring = notes.map((m, i) => this.note(m, t + i * (dir > 0 ? 0.012 : 0.009), base, short ? 0.1 : 0, spread(h.notes.indexOf(m), h.notes.length)));
   }
   patPick(h, t, i, vel) {
     const idx = Math.min(i, h.notes.length - 1);
     if (h.picked[idx]) this.releaseVoice(h.picked[idx], t, 0.02); // re-picking a string stops its last note
-    h.picked[idx] = this.note(h.notes[idx], t, (idx === 0 ? 0.48 : 0.38) * vel);
+    h.picked[idx] = this.note(h.notes[idx], t, (idx === 0 ? 0.48 : 0.38) * vel, 0, spread(idx, h.notes.length));
   }
   strum(notes, t, short) {
     const vel = this.sound === "rock" ? 0.4 : 0.32;
-    notes.forEach((m, i) => this.note(m, t + i * (short ? 0.006 : 0.016), vel, short ? 0.12 : 0));
+    notes.forEach((m, i) => this.note(m, t + i * (short ? 0.006 : 0.016), vel, short ? 0.12 : 0, spread(i, notes.length)));
   }
   arpNote(h, t) {
     const n = h.notes.length, order = [...Array(n).keys(), ...Array.from({ length: Math.max(0, n - 2) }, (_, i) => n - 2 - i)];
     const idx = order[h.i++ % order.length];
-    this.note(h.notes[idx], t, idx === 0 ? 0.5 : 0.36);
+    this.note(h.notes[idx], t, idx === 0 ? 0.5 : 0.36, 0, spread(idx, n));
   }
 
   // Press: start a chord. It keeps going (arp / pulse / pad) until release().
-  play(chord, pattern, songPat = "") {
-    const t = this.ctx.currentTime + 0.005;
+  // opt.at: start at an exact (future) time; opt.grid: bar start to lock the song pattern to (backing track)
+  play(chord, pattern, songPat = "", opt = {}) {
+    const t = Math.max(this.ctx.currentTime + 0.005, opt.at || 0);
     this.release(t);
     for (const v of this.voices) this.releaseVoice(v, t, 0.06); // lift fingers off the old chord
     const notes = this.sound === "rock" ? chord.power : chord.notes;
     const h = this.held = { notes, pattern, i: 0, pads: [], from: t + 0.12 };
     if (pattern === "song" && songPat) {
-      // each new chord starts the pattern from beat 1
-      Object.assign(h, { pat: songPat, k: 0, t0: t, stepDur: 240 / this.bpm / songPat.length, ring: [], picked: [] });
-      this.patStep(h, t);
-      h.k = 1; h.nextT = t + h.stepDur;
+      // without a grid, each new chord starts the pattern from beat 1; with one, join it mid-bar
+      const stepDur = 240 / this.bpm / songPat.length, t0 = opt.grid ?? t;
+      const k = t > t0 ? Math.round((t - t0) / stepDur) : 0;
+      Object.assign(h, { pat: songPat, k, t0, stepDur, ring: [], picked: [] });
+      const ch = songPat[k % songPat.length];
+      if (ch === "." || ch === "-") this.patStrum(h, t, 1, 0.8); else this.patStep(h, t); // a pinch always makes a sound
+      h.k = k + 1; h.nextT = t0 + h.k * stepDur;
+      if (h.nextT < t + 0.03) { h.k++; h.nextT += stepDur; }
     } else if (pattern === "arp") this.arpNote(h, t);
     else this.strum(notes, t, pattern === "pulse");
     if (this.sound === "synth" && pattern !== "pulse") h.pads = this.padOn(chord.notes, t);
@@ -614,6 +682,23 @@ class Rig {
   hat(t, open) { this.noiseHit(t, "highpass", 8000, 0.18, open ? 0.25 : 0.045); }
   crash(t) { this.noiseHit(t, "highpass", 5000, 0.35, 1.4); }
 
+  // round, warm synth bass for the backing track
+  bass(midi, t, dur) {
+    const c = this.ctx, f = 440 * 2 ** ((midi - 69) / 12);
+    const o = c.createOscillator(), sub = c.createOscillator(), lp = this.biq("lowpass", 1100, 1.2), g = c.createGain();
+    o.type = "triangle"; o.frequency.value = f; sub.type = "sine"; sub.frequency.value = f;
+    lp.frequency.setValueAtTime(1100, t); lp.frequency.exponentialRampToValueAtTime(380, t + 0.25);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5, t + 0.012);
+    g.gain.setTargetAtTime(0.32, t + 0.05, 0.2); g.gain.setTargetAtTime(0, t + dur, 0.06);
+    o.connect(lp); sub.connect(lp); lp.connect(g); g.connect(this.bassBus);
+    o.start(t); sub.start(t); o.stop(t + dur + 0.5); sub.stop(t + dur + 0.5);
+  }
+  // one chord's worth of bass: the chord's lowest note (so slash chords work) on every other beat
+  bassLine(chord, t, beatDur, beats) {
+    const root = chord.notes[0] - 12;
+    for (let b = 0; b < beats; b += 2) this.bass(b % 4 === 2 && beats >= 4 ? root + 12 : root, t + b * beatDur, beatDur * 1.8);
+  }
+
   // metronome click for training (skips the tone filter so it's always crisp)
   click(t, accent, countIn) {
     const c = this.ctx, o = c.createOscillator(), lp = this.biq("lowpass", 3000), g = c.createGain();
@@ -630,7 +715,7 @@ const video = $("#video"), canvas = $("#stage"), g = canvas.getContext("2d");
 let W = 0, H = 0, TOP = 0, BOT = 0;
 const S = {
   songIdx: 0, song: null, pos: 0, cur: -1, mode: "song", sound: "guitar", pattern: "arp",
-  bright: 0.75, brightT: 0.75, lefty: false,
+  bright: 0.75, brightT: 0.75, vib: 0, vibT: 0, vibKey: false, space: 0.36, spaceT: 0.36, lefty: false,
   hands: [], play: null, expr: null, pinchPt: null,
   playPinch: false, exprPinch: false, fistLatch: false, held: false,
   hoverPad: -1, activePad: -1, padRects: [],
@@ -685,9 +770,9 @@ function loadSong(i) {
 }
 
 /* ───────────────────────── Actions ───────────────────────── */
-function trigger(chord) {
+function trigger(chord, opt) {
   ensureRig();
-  rig.play(chord, S.pattern, S.song.pattern);
+  rig.play(chord, S.pattern, S.song.pattern, opt);
   S.held = true; S.flash = 1; S.nowName = chord.name;
   const [x0, x1] = playSide();
   for (let i = 0; i < 18; i++) {
@@ -707,10 +792,10 @@ function playPad(i) {
   if (T.active) { if (T.kind === "pads") padsPad(i); return; }
   const pad = S.song?.pads[i];
   if (!pad) return;
-  trigger(pad);
+  trigger(pad, B.on ? backingGrid() : undefined);
   S.activePad = i;
   const seq = S.song.seq;
-  if (seq[S.pos]?.chord.name === pad.name) { S.cur = S.pos; S.pos = (S.pos + 1) % seq.length; }
+  if (!B.on && seq[S.pos]?.chord.name === pad.name) { S.cur = S.pos; S.pos = (S.pos + 1) % seq.length; }
 }
 function releaseHeld() { rig?.release(); S.held = false; S.activePad = -1; }
 function back() { const n = S.song.seq.length; if (n) S.pos = (S.pos - 1 + n) % n; }
@@ -721,6 +806,7 @@ function stopAll() { rig?.choke(); S.held = false; S.activePad = -1; }
 // Every input goes through these, so training lessons can take them over.
 function onPinch(fromCam) {
   if (trainPinch(fromCam)) return;
+  if (B.on && S.mode === "song") return backingPinch();
   if (S.mode === "song") playNext();
   else if (fromCam) { if (S.hoverPad >= 0) playPad(S.hoverPad); }
   else { const i = S.song.pads.findIndex(p => p.name === S.song.seq[S.pos]?.chord.name); if (i >= 0) playPad(i); }
@@ -728,6 +814,66 @@ function onPinch(fromCam) {
 function onRelease() { releaseHeld(); trainRelease(); }
 function onBack() { if (T.active) trainEvent("back"); else back(); }
 function onStop() { stopAll(); trainEvent("stop"); }
+
+/* ───────────────────────── Backing track ─────────────────────────
+   Bass + drums play the song in time from the current position. The lane follows along;
+   a pinch plays whatever chord the band is on, and holding the pinch follows the changes. */
+const B = { on: false, t0: 0, start: 0, idx: -1, sched: 0, beatDur: 0, beats: 4, chordDur: 0, timer: null, ownDrums: false };
+
+function backingStart() {
+  if (T.active || !S.song.seq.length) return;
+  ensureRig(); stopAll();
+  const bpm = +$("#bpm").value, beatDur = 60 / bpm, beats = S.song.beats || 4, now = rig.ctx.currentTime;
+  rig.setBpm(bpm);
+  Object.assign(B, { on: true, beatDur, beats, chordDur: beats * beatDur, t0: now + 0.3 + 4 * beatDur,
+    start: S.pos % S.song.seq.length, idx: -1, sched: 0 });
+  for (let i = 0; i < 4; i++) rig.click(now + 0.3 + i * beatDur, i === 0, true); // one bar count-in
+  B.ownDrums = !rig.drumsOn;
+  rig.drumsOn = true; rig.step = 0; rig.next = B.t0;
+  S.cur = -1; S.nowName = null;
+  B.timer = setInterval(() => { try { backingTick(); } catch (e) { console.error(e); } }, 20);
+  syncButtons();
+}
+function backingStop() {
+  if (!B.on) return;
+  B.on = false; clearInterval(B.timer); B.timer = null;
+  if (rig && B.ownDrums) rig.drumsOn = false;
+  syncButtons();
+}
+function backingTick() {
+  const seq = S.song.seq, now = rig.ctx.currentTime;
+  // schedule the bass a little ahead
+  while (B.start + B.sched < seq.length && B.t0 + B.sched * B.chordDur < now + 0.15) {
+    rig.bassLine(seq[B.start + B.sched].chord, B.t0 + B.sched * B.chordDur, B.beatDur, B.beats);
+    B.sched++;
+  }
+  // step to the next chord right on the bar line (a hair early so a held chord can switch exactly on time)
+  while (B.t0 + (B.idx + 1) * B.chordDur < now + 0.05) {
+    const k = B.idx + 1, i = B.start + k, tb = B.t0 + k * B.chordDur;
+    if (i >= seq.length) { backingStop(); popupMain("end of song"); return; }
+    B.idx = k; S.cur = i; S.pos = (i + 1) % seq.length;
+    if (S.held && S.mode === "song") { // in pads mode you pick the chord yourself
+      const c = seq[i].chord;
+      rig.play(c, S.pattern, S.song.pattern, { at: tb, grid: tb });
+      S.nowName = c.name; S.flash = 1;
+      S.activePad = S.song.pads.findIndex(p => p.name === c.name);
+    }
+  }
+}
+// bar grid for joining the song pattern in time
+function backingGrid() {
+  const now = rig.ctx.currentTime;
+  if (B.idx < 0) return { at: B.t0, grid: B.t0 }; // pinched during the count-in: come in on beat 1
+  const bar = B.t0 + B.idx * B.chordDur;
+  return { grid: bar + Math.floor((now - bar) / (4 * B.beatDur)) * 4 * B.beatDur };
+}
+function backingPinch() {
+  const seq = S.song.seq, i = B.idx < 0 ? B.start : S.cur;
+  trigger(seq[i].chord, backingGrid());
+  S.activePad = S.song.pads.findIndex(p => p.name === seq[i].chord.name);
+}
+function toggleBacking() { B.on ? backingStop() : backingStart(); }
+const popupMain = text => { S.banner = { text, t: performance.now() }; };
 
 /* ───────────────────────── Hand tracking ───────────────────────── */
 async function startCamera() {
@@ -774,8 +920,10 @@ function toScreen(p) {
 }
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const avg = (pts, ids) => ({ x: ids.reduce((s, i) => s + pts[i].x, 0) / ids.length, y: ids.reduce((s, i) => s + pts[i].y, 0) / ids.length });
-const playSide = () => (S.lefty ? [0, W * 0.5] : [W * 0.5, W]);
-const exprSide = () => (S.lefty ? [W * 0.5, W] : [0, W * 0.5]);
+// narrow screens: slim tone strip on the left, everything else is play area
+const narrow = () => W < 700;
+const playSide = () => (narrow() ? [64, W] : S.lefty ? [0, W * 0.5] : [W * 0.5, W]);
+const exprSide = () => (narrow() ? [0, 64] : S.lefty ? [W * 0.5, W] : [0, W * 0.5]);
 const guideH = () => clamp(H * 0.2, 100, 160);
 
 let lastVideoTime = -1;
@@ -810,7 +958,7 @@ function track(now) {
   if (play) handlePlay(play);
   else { S.pinchPt = null; S.hoverPad = -1; if (S.playPinch) { S.playPinch = false; onRelease(); } }
   if (expr) handleExpr(expr);
-  else { S.exprPinch = false; S.fistLatch = false; }
+  else { S.exprPinch = false; S.fistLatch = false; if (!S.vibKey) S.vibT = 0; }
 }
 
 function pinched(h, was) {
@@ -838,6 +986,12 @@ function handleExpr(h) {
   const p = !fist && pinched(h, S.exprPinch);
   if (p && !S.exprPinch) onBack();
   S.exprPinch = p;
+
+  // tilt = vibrato (dead zone so a relaxed hand doesn't wobble)
+  const ang = Math.abs(Math.atan2(pts[9].x - pts[0].x, pts[0].y - pts[9].y)) * 180 / Math.PI;
+  S.vibT = fist ? 0 : clamp((ang - 18) / 32, 0, 1);
+  // finger spread (thumb tip to pinky tip) = space; leave it alone while pinching or in a fist
+  if (!fist && !p) S.spaceT = clamp((dist(pts[4], pts[20]) / h.size - 0.9) / 1.0, 0, 1);
 }
 
 /* ───────────────────────── Render ───────────────────────── */
@@ -914,12 +1068,65 @@ function drawSongOrb(x0, x1, y0, y1) {
   g.textAlign = "center";
   g.font = "11px JetBrains Mono, monospace"; g.fillStyle = "rgba(243,233,220,0.5)";
   const holdMsg = S.pattern === "song" && S.song.pattern ? "HOLD: PATTERN PLAYING" : "RINGING — RELEASE, THEN PINCH";
-  g.fillText(S.held ? holdMsg : "PINCH TO PLAY", cx, cy - r * 0.42);
+  g.fillText(S.held ? holdMsg : camOn ? "PINCH TO PLAY" : "TAP TO PLAY", cx, cy - r * 0.42);
   g.font = `600 ${r * 0.6}px Oswald`; g.fillStyle = S.held ? "rgba(243,233,220,0.35)" : "#f3e9dc";
   g.fillText(next, cx, cy + r * 0.25);
   g.font = "11px JetBrains Mono, monospace"; g.fillStyle = "rgba(243,233,220,0.4)";
   g.fillText("next", cx, cy + r * 0.5);
   if (cy + r + 70 < y1 + 10) drawPatternStrip(cx, cy + r + 32, x1 - x0 - 16);
+}
+
+/* Guitar chord shapes, low E string → high e. x = don't play, 0 = open, n = fret. */
+const SHAPES = {
+  A: "x02220", Am: "x02210", A7: "x02020", Asus4: "x02230", Asus2: "x02200", A7sus4: "x02033", Amaj7: "x02120", Am7: "x02010",
+  B: "x24442", Bm: "x24432", B7: "x21202", Bm7: "x20202",
+  C: "x32010", Cm: "x35543", Cadd9: "x32030", C7: "x32310", Cmaj7: "x32000",
+  D: "xx0232", Dm: "xx0231", D7: "xx0212", Dsus4: "xx0233", Dsus2: "xx0230", Dmaj7: "xx0222", Dm7: "xx0211",
+  "D/B": "x20232", "D/F#": "2x0232",
+  E: "022100", Em: "022000", Em7: "022033", E7: "020100", Esus4: "022200", Emaj7: "021100",
+  F: "133211", Fm: "133111", Fmaj7: "xx3210", F7: "131211",
+  "F#": "244322", "F#m": "244222", "F#7": "242322",
+  G: "320003", G7: "320001", Gsus4: "330013", "G/B": "x20003", Gm: "355333", Gmaj7: "320002",
+  Bb: "x13331", Eb: "x68886", Ab: "466544",
+};
+// songs can map a chord to the shape you'd really play (e.g. capo songs)
+function shapeFor(song, name) {
+  const alias = song?.shapes?.[name], key = alias || name, s = SHAPES[key];
+  return s ? { frets: [...s].map(c => (c === "x" ? -1 : +c)), label: key, capo: alias ? song.capo || 0 : 0 } : null;
+}
+function drawChordDiagram(cx, top, w, name, title = "") {
+  const sh = shapeFor(S.song, name);
+  g.textAlign = "center";
+  if (title) { g.font = "10px JetBrains Mono, monospace"; g.fillStyle = "rgba(243,233,220,0.5)"; g.fillText(title, cx, top); }
+  if (!sh) {
+    g.font = "11px JetBrains Mono, monospace"; g.fillStyle = "rgba(243,233,220,0.4)";
+    g.fillText(`no diagram for ${name}`, cx, top + 30);
+    return;
+  }
+  const played = sh.frets.filter(f => f > 0), maxF = Math.max(0, ...played);
+  const base = maxF > 4 ? Math.min(...played) : 1, nF = 4, sx = w / 5, sy = w * 0.26, h = sy * nF;
+  const x0 = cx - w / 2, y0 = top + 56;
+  g.font = `600 ${Math.round(w * 0.15)}px Oswald`; g.fillStyle = "#f3e9dc";
+  g.fillText(sh.label + (sh.capo ? `  · capo ${sh.capo}` : ""), cx, top + 26);
+  // grid
+  g.strokeStyle = "rgba(243,233,220,0.35)"; g.lineWidth = 1;
+  for (let i = 0; i < 6; i++) { g.beginPath(); g.moveTo(x0 + i * sx, y0); g.lineTo(x0 + i * sx, y0 + h); g.stroke(); }
+  for (let f = 0; f <= nF; f++) { g.beginPath(); g.moveTo(x0, y0 + f * sy); g.lineTo(x0 + w, y0 + f * sy); g.stroke(); }
+  if (base === 1) { g.fillStyle = "#f3e9dc"; g.fillRect(x0 - 1, y0 - 3, w + 2, 4); } // nut
+  else { g.font = "10px JetBrains Mono, monospace"; g.fillStyle = "rgba(243,233,220,0.6)"; g.textAlign = "right"; g.fillText(`${base}fr`, x0 - 6, y0 + sy * 0.65); g.textAlign = "center"; }
+  // barre: lowest fret held on 3+ strings up to the high e
+  const minF = played.length ? Math.min(...played) : 0, barreFrom = sh.frets.indexOf(minF);
+  if (minF > 0 && barreFrom <= 1 && sh.frets[5] === minF && sh.frets.filter(f => f === minF).length >= 3) {
+    rrect(x0 + barreFrom * sx - 6, y0 + (minF - base + 0.5) * sy - 6, (5 - barreFrom) * sx + 12, 12, 6);
+    g.fillStyle = "#ffb02e"; g.fill();
+  }
+  sh.frets.forEach((f, i) => {
+    const x = x0 + i * sx;
+    g.font = "11px JetBrains Mono, monospace";
+    if (f < 0) { g.fillStyle = "rgba(255,120,90,0.85)"; g.fillText("×", x, y0 - 9); }
+    else if (f === 0) { g.strokeStyle = "rgba(243,233,220,0.8)"; g.beginPath(); g.arc(x, y0 - 12, 4, 0, 7); g.stroke(); }
+    else { g.beginPath(); g.arc(x, y0 + (f - base + 0.5) * sy, Math.min(7, sx * 0.32), 0, 7); g.fillStyle = "#ffb02e"; g.fill(); }
+  });
 }
 
 // The song's rhythm as a row of steps (↓ ↑ • ·), with the playing step lit up.
@@ -980,9 +1187,21 @@ function drawTone(x0, x1, y0, y1) {
   const grd = g.createLinearGradient(0, y1, 0, y0);
   grd.addColorStop(0, "rgba(255,90,40,0.6)"); grd.addColorStop(1, "rgba(255,220,140,0.9)");
   g.fillStyle = grd; g.fill();
+  S.toneRect = { x: bx - 14, y: y0, w: bw + 28, h }; // touch / mouse can drag the tone bar
+  if (x1 - x0 < 100) return; // narrow: just the bar
   g.save(); g.translate(bx + (S.lefty ? -10 : 26), y0 + 4);
+  const dir = S.lefty ? -1 : 1;
   g.font = "10px JetBrains Mono, monospace"; g.fillStyle = "rgba(243,233,220,0.5)"; g.textAlign = S.lefty ? "right" : "left";
-  g.fillText("TONE ↑ bright", 0, 8); g.fillText("pinch = back", 0, 24); g.fillText("fist = stop", 0, 40);
+  g.fillText("TONE ↑ height", 0, 8);
+  // small expression meters
+  [["VIBRATO · tilt", S.vib], ["SPACE · spread", S.space]].forEach(([label, v], i) => {
+    const y = 26 + i * 30;
+    g.fillStyle = "rgba(243,233,220,0.5)"; g.fillText(label, 0, y);
+    rrect(dir > 0 ? 0 : -90, y + 5, 90, 5, 2.5); g.fillStyle = "rgba(255,255,255,0.08)"; g.fill();
+    rrect(dir > 0 ? 0 : -90 * v, y + 5, 90 * v, 5, 2.5); g.fillStyle = "#ffb02e"; g.fill();
+  });
+  g.fillStyle = "rgba(243,233,220,0.4)";
+  g.fillText("pinch = back", 0, 96); g.fillText("fist = stop", 0, 110);
   g.restore();
 }
 
@@ -999,6 +1218,11 @@ function draw() {
   g.fillStyle = vig; g.fillRect(0, 0, W, H);
   if (!S.song) return;
 
+  if (S.banner && performance.now() - S.banner.t < 1800) {
+    const k = (performance.now() - S.banner.t) / 1800;
+    g.globalAlpha = 1 - k * k; g.font = "600 34px Oswald"; g.textAlign = "center"; g.fillStyle = "#ffb02e";
+    g.fillText(S.banner.text.toUpperCase(), W / 2, H * 0.62); g.globalAlpha = 1;
+  }
   if (T.active) drawTraining();
   else {
     drawGuide();
@@ -1007,6 +1231,11 @@ function draw() {
     if (S.mode === "song") { S.padRects = []; drawSongOrb(px0 + 8, px1 - 16, areaTop, BOT); }
     else drawPads(px0 + 8, px1 - 16, areaTop, BOT);
     drawTone(ex0 + 16, ex1 - 16, areaTop, BOT);
+    // the shape you'll need next, so you can learn the real guitar fingering as you go
+    const seq = S.song.seq;
+    if (S.mode === "song" && ex1 - ex0 > 330 && BOT - areaTop > 230 && seq.length) {
+      drawChordDiagram((ex0 + ex1) / 2 + 60, areaTop + 10, clamp((ex1 - ex0) * 0.26, 90, 130), seq[S.pos % seq.length].chord.name, "NEXT SHAPE");
+    }
   }
 
   for (const p of S.sparks) {
@@ -1035,6 +1264,9 @@ function frame(now) {
   requestAnimationFrame(frame); // schedule first so one error can never freeze the loop
   try { track(now); } catch (e) { console.error(e); }
   if (Math.abs(S.brightT - S.bright) > 0.002) { S.bright += (S.brightT - S.bright) * 0.2; rig?.setBright(S.bright); }
+  const vibGoal = S.vibKey ? 0.8 : S.vibT;
+  if (Math.abs(vibGoal - S.vib) > 0.004) { S.vib += (vibGoal - S.vib) * 0.15; rig?.setVibrato(S.vib); }
+  if (Math.abs(S.spaceT - S.space) > 0.004) { S.space += (S.spaceT - S.space) * 0.1; rig?.setSpace(S.space); }
   if (rig) while (rig.beats.length && rig.beats[0].t <= rig.ctx.currentTime) { S.pulseDown = rig.beats.shift().down; S.pulse = 1; }
   S.flash *= 0.9; S.pulse *= 0.85;
 
@@ -1132,7 +1364,7 @@ function practiceGroups(seq) {
 
 function buildLessons(song) {
   const L = [
-    { id: "gestures", kind: "gestures", global: true, title: "Gestures warm-up", desc: "Pinch, hold, release, tone, back and stop. Do this once." },
+    { id: "gestures", kind: "gestures", global: true, title: "Gestures warm-up", desc: "Pinch, hold, release, tone, vibrato, space, back and stop." },
     { id: "chords", kind: "chords", title: "Meet the chords", desc: `${song.pads.length} chords: ${song.pads.map(c => c.name).join(", ")}` },
   ];
   for (const gp of practiceGroups(song.seq)) {
@@ -1179,9 +1411,60 @@ const progress = {
   get(song, id) { return this.data[song]?.[id]; },
   set(song, id, v) {
     (this.data[song] ??= {})[id] = v;
-    try { localStorage.setItem("rockfingers.progress", JSON.stringify(this.data)); } catch {}
+    this.save();
   },
+  save() { try { localStorage.setItem("rockfingers.progress", JSON.stringify(this.data)); } catch {} },
+  // one play-along run: overall accuracy + how cleanly each chord change was hit
+  addRun(song, id, acc, speed, targets) {
+    const d = (this.data[song] ??= {});
+    (d._runs ??= []).push({ t: Date.now(), id, acc: +acc.toFixed(3), sp: speed });
+    d._runs = d._runs.slice(-60);
+    const tr = (d._tr ??= {});
+    for (let i = 1; i < targets.length; i++) {
+      const k = `${targets[i - 1].chord.name} → ${targets[i].chord.name}`;
+      if (k.split(" → ")[0] === k.split(" → ")[1]) continue; // same chord twice isn't a change
+      const e = (tr[k] ??= [0, 0]);
+      e[1]++;
+      if (targets[i].res === "perfect" || targets[i].res === "good") e[0]++;
+    }
+    this.save();
+  },
+  reset(song) { delete this.data[song]; this.save(); },
 };
+
+function renderStats() {
+  const box = $("#tmStats"), d = progress.data[S.song.title] || {}, runs = d._runs || [];
+  if (!runs.length) { box.textContent = "No play-along runs yet. Your accuracy, trend and trickiest chord changes will show up here."; return; }
+  const last = runs.slice(-10), full = runs.filter(r => r.id === "full");
+  const bestFull = full.length ? Math.max(...full.map(r => r.acc)) : null;
+  const avg = a => a.reduce((s, r) => s + r.acc, 0) / a.length;
+  let trend = "";
+  if (runs.length >= 4) {
+    const recent = avg(runs.slice(-3)), before = avg(runs.slice(-6, -3).length ? runs.slice(-6, -3) : runs.slice(0, -3));
+    trend = recent > before + 0.03 ? "↑ improving" : recent < before - 0.03 ? "↓ slipping, so try a slower speed" : "→ steady";
+  }
+  const tricky = Object.entries(d._tr || {}).filter(([, [, n]]) => n >= 3)
+    .map(([k, [hit, n]]) => ({ k, r: hit / n, hit, n })).sort((a, b) => a.r - b.r).slice(0, 3).filter(x => x.r < 0.9);
+
+  box.replaceChildren();
+  const line1 = document.createElement("div");
+  line1.append("Runs: ", Object.assign(document.createElement("b"), { textContent: String(runs.length) }));
+  if (bestFull != null) line1.append(" · Full song best: ", Object.assign(document.createElement("b"), { textContent: `${Math.round(bestFull * 100)}%` }));
+  line1.append(" · Last runs");
+  const bars = document.createElement("span"); bars.className = "bars";
+  for (const r of last) { const i = document.createElement("i"); i.style.height = `${Math.max(8, r.acc * 100)}%`; i.title = `${Math.round(r.acc * 100)}%`; bars.append(i); }
+  line1.append(bars, trend);
+  box.append(line1);
+  const line2 = document.createElement("div");
+  if (tricky.length) {
+    line2.append("Trickiest changes: ");
+    tricky.forEach((x, i) => {
+      if (i) line2.append(" · ");
+      line2.append(Object.assign(document.createElement("span"), { className: "tr", textContent: x.k }), ` ${Math.round(x.r * 100)}% clean`);
+    });
+  } else line2.textContent = runs.length >= 3 ? "No problem chord changes. Nice and clean!" : "Play a few more runs to find your trickiest chord changes.";
+  box.append(line2);
+}
 
 const T = {
   active: false, lessons: [], lesson: null, idx: -1, kind: null, finished: false, token: 0,
@@ -1196,6 +1479,7 @@ const popup = (text, kind = "info") => T.popups.push({ text, kind, t: performanc
 
 function expectedPadName() {
   if (T.active) return T.kind === "pads" && T.pads && !S.hideHint ? T.pads.seq[T.pads.i]?.name : null;
+  if (B.on) return S.song.seq[S.cur]?.chord.name ?? null;
   return S.song.seq.length ? S.song.seq[S.pos % S.song.seq.length].chord.name : null;
 }
 
@@ -1214,11 +1498,12 @@ function coach({ text, tip = "", step = "", buttons = [] }) {
 }
 
 function openTrainMenu() {
-  exitLesson(false);
+  backingStop(); exitLesson(false);
   stopAll();
   T.lessons = buildLessons(S.song);
   $("#tmSong").textContent = S.song.title;
   $("#tmIntro").textContent = songIntro(S.song);
+  renderStats();
   $("#lessonList").replaceChildren(...T.lessons.map((L, i) => {
     const pr = progress.get(L.global ? "_all" : S.song.title, L.id);
     const li = document.createElement("li");
@@ -1253,7 +1538,7 @@ function applySetup() {
 }
 
 function startLesson(i) {
-  closeTrainMenu();
+  closeTrainMenu(); backingStop();
   ensureRig(); clearHw(); stopAll();
   const L = T.lessons[i];
   Object.assign(T, { active: true, idx: i, lesson: L, kind: L.kind, finished: false, step: 0, okAt: 0, popups: [], pads: null });
@@ -1328,12 +1613,19 @@ const GESTURES = [
   { icon: "🤚", say: "Show your OTHER hand on the left side.", keys: "no camera, skipping", test: () => !camOn || !!S.expr },
   { icon: "⬆", say: "Raise that hand up high. The tone gets brighter (watch the bar).", keys: "press ↑", test: () => S.brightT > 0.8 },
   { icon: "⬇", say: "Lower it down. Darker, softer tone.", keys: "press ↓", test: () => S.brightT < 0.25 },
+  { icon: "〰", demo: true, say: "Tilt that hand sideways, like turning a doorknob. The further you tilt, the more the notes wobble. That's vibrato. Listen to the chord.",
+    keys: "hold V", test: () => S.vibKey || S.vibT > 0.6 },
+  { icon: "🌌", demo: true, say: "Now hold it upright and spread your fingers wide. More space: the chord echoes and rings out like in a big hall (watch the SPACE meter).",
+    keys: "press ] a few times", test: () => S.spaceT > 0.75 },
+  { icon: "🎯", demo: true, say: "Squeeze your fingers together, keeping them straight (not a fist). The sound goes dry and close, like a small room.",
+    keys: "press [ a few times", test: () => S.spaceT < 0.2 },
   { icon: "↩", say: "Pinch with that hand. It steps back one chord in songs (handy for retrying a bit).", keys: "press ←", test: ev => ev === "back" },
   { icon: "✊", say: "Make a fist with that hand. It stops all sound instantly.", keys: "press X", test: ev => ev === "stop" },
 ];
 function gestureShow() {
   const s = GESTURES[T.step];
-  coach({ step: `Step ${T.step + 1} of ${GESTURES.length}`, text: s.say, tip: camOn ? "" : `Keyboard: ${s.keys}`,
+  const tip = [s.demo ? "A chord plays by itself so you can hear the change." : "", camOn ? "" : `Keyboard: ${s.keys}`].filter(Boolean).join(" ");
+  coach({ step: `Step ${T.step + 1} of ${GESTURES.length}`, text: s.say, tip,
     buttons: [{ label: "Skip step", ghost: true, fn: gestureNext }] });
 }
 function gestureCheck(ev) {
@@ -1433,6 +1725,7 @@ function hwFinish() {
   clearHw(); releaseHeld(); rig.setBpm(S.song.bpm);
   const n = hw.targets.length, cnt = k => hw.targets.filter(t => t.res === k).length;
   const acc = hw.targets.reduce((s, t) => s + (PTS[t.res] || 0), 0) / n, pass = acc >= 0.75;
+  progress.addRun(S.song.title, T.lesson.id, acc, T.speed, hw.targets);
   const stars = acc >= 0.9 ? "★★★" : acc >= 0.75 ? "★★☆" : acc >= 0.5 ? "★☆☆" : "☆☆☆";
   const faster = pass && T.speed < 1 ? Math.min(1, +(T.speed + 0.2).toFixed(1)) : null;
   const early = cnt("early"), late = cnt("late");
@@ -1489,7 +1782,14 @@ function padsFinish() {
 setInterval(() => { try { trainFrame(); } catch (e) { console.error(e); } }, 40);
 function trainFrame() {
   if (!T.active) return;
-  if (T.kind === "gestures" && !T.finished) gestureCheck(null);
+  if (T.kind === "gestures" && !T.finished) {
+    gestureCheck(null);
+    // vibrato / space steps: strum a chord by itself every couple of seconds so you can hear the effect
+    if (GESTURES[T.step]?.demo && rig && performance.now() - (T.demoAt || 0) > 2400) {
+      T.demoAt = performance.now();
+      rig.play(S.song.pads[0], "strum");
+    }
+  }
   const hw = T.hw;
   if (hw) {
     const now = rig.ctx.currentTime - audioLat();
@@ -1525,7 +1825,11 @@ function drawGestureCard(y0, y1) {
 function drawChordCard(y0, y1) {
   const c = S.song.pads[T.chordI];
   if (!c) return;
-  const cx = W / 2, cy = (y0 + y1) / 2, size = clamp((y1 - y0) * 0.36, 56, 180);
+  // wide: name on the left, guitar shape on the right; narrow: shape underneath
+  const wide = W > 640, size = clamp((y1 - y0) * (wide ? 0.36 : 0.22), 48, 180);
+  const cx = wide ? W * 0.36 : W / 2, cy = wide ? (y0 + y1) / 2 : y0 + size * 0.9;
+  const dw = wide ? clamp(W * 0.16, 110, 170) : 110;
+  drawChordDiagram(wide ? W * 0.68 : W / 2, wide ? cy - dw * 0.75 : cy + size * 0.25 + 76, dw, c.name, "GUITAR SHAPE");
   g.textAlign = "center";
   g.font = `600 ${size}px Oswald`;
   g.fillStyle = "#ffb02e"; g.shadowColor = "#ff5a1f"; g.shadowBlur = 20 + 30 * S.flash;
@@ -1638,11 +1942,51 @@ requestAnimationFrame(frame);
 addEventListener("click", e => { if (e.target.matches("header button, header input[type=checkbox]")) e.target.blur(); });
 document.querySelectorAll("header select").forEach(s => s.addEventListener("change", () => s.blur()));
 
+$("#moreBtn").onclick = () => {
+  const open = $("#hdr").classList.toggle("open");
+  $("#moreBtn").setAttribute("aria-expanded", open);
+};
+
+// Touch / mouse on the stage: tap = pinch (hold = keep it going), tap a pad to pick it, drag the tone bar.
+const inRect = (r, x, y) => r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+const touch = { id: null, tone: false };
+canvas.addEventListener("pointerdown", e => {
+  if (touch.id != null || !S.song) return;
+  $("#intro").style.display = "none";
+  ensureRig();
+  const x = e.clientX, y = e.clientY;
+  try { canvas.setPointerCapture(e.pointerId); } catch {} // keep getting moves even if the finger leaves the canvas
+  touch.id = e.pointerId;
+  if (inRect(S.toneRect, x, y) && T.kind !== "highway") {
+    touch.tone = true;
+    S.brightT = clamp((S.toneRect.y + S.toneRect.h - y) / S.toneRect.h, 0, 1);
+    return;
+  }
+  touch.tone = false;
+  const padsView = T.active ? T.kind === "pads" : S.mode === "pads";
+  if (padsView) {
+    const i = S.padRects.findIndex(r => inRect(r, x, y));
+    if (i >= 0) playPad(i); else touch.id = null;
+  } else onPinch(false);
+});
+canvas.addEventListener("pointermove", e => {
+  if (e.pointerId !== touch.id || !touch.tone) return;
+  S.brightT = clamp((S.toneRect.y + S.toneRect.h - e.clientY) / S.toneRect.h, 0, 1);
+});
+const touchEnd = e => {
+  if (e.pointerId !== touch.id) return;
+  if (!touch.tone) onRelease();
+  touch.id = null; touch.tone = false;
+};
+canvas.addEventListener("pointerup", touchEnd);
+canvas.addEventListener("pointercancel", touchEnd);
+
 $("#startCam").onclick = startCamera;
 $("#startKeys").onclick = () => { ensureRig(); $("#intro").style.display = "none"; $("#status").textContent = "keyboard mode"; };
-$("#song").onchange = e => { exitLesson(false); closeTrainMenu(); stopAll(); loadSong(+e.target.value); };
+$("#song").onchange = e => { backingStop(); exitLesson(false); closeTrainMenu(); stopAll(); loadSong(+e.target.value); };
 $("#trainBtn").onclick = () => { ensureRig(); $("#intro").style.display = "none"; openTrainMenu(); };
 $("#tmClose").onclick = closeTrainMenu;
+$("#tmReset").onclick = () => { if (confirm(`Clear all scores and stats for "${S.song.title}"?`)) { progress.reset(S.song.title); openTrainMenu(); } };
 $("#cExit").onclick = () => exitLesson(true);
 $("#modeSeg").onclick = e => { const v = e.target.dataset.v; if (v) setMode(v); };
 function setMode(v) {
@@ -1655,13 +1999,21 @@ $("#sound").onchange = e => {
 };
 $("#pattern").value = S.pattern;
 $("#pattern").onchange = e => { S.pattern = e.target.value; };
-$("#bpm").oninput = e => { $("#bpmV").textContent = e.target.value; rig?.setBpm(+e.target.value); };
+$("#bpm").oninput = e => { backingStop(); $("#bpmV").textContent = e.target.value; rig?.setBpm(+e.target.value); };
 $("#drumsBtn").onclick = toggleDrums;
+$("#backBtn").onclick = toggleBacking;
 function toggleDrums() {
   ensureRig();
+  if (B.on) backingStop(); // the backing track owns the drums while it runs
   rig.setDrums(!rig.drumsOn);
-  $("#drumsBtn").classList.toggle("on", rig.drumsOn);
-  $("#drumsBtn").textContent = rig.drumsOn ? "■ DRUMS" : "▶ DRUMS";
+  syncButtons();
+}
+function syncButtons() {
+  const drums = !!rig?.drumsOn;
+  $("#drumsBtn").classList.toggle("on", drums);
+  $("#drumsBtn").textContent = drums ? "■ DRUMS" : "▶ DRUMS";
+  $("#backBtn").classList.toggle("on", B.on);
+  $("#backBtn").textContent = B.on ? "■ BACKING" : "▶ BACKING";
 }
 $("#lefty").onchange = e => { S.lefty = e.target.checked; };
 
@@ -1748,11 +2100,18 @@ addEventListener("keydown", e => {
         case "m": if (!T.active) setMode(S.mode === "song" ? "pads" : "song"); break;
         case "x": onStop(); break;
         case "d": toggleDrums(); break;
+        case "b": if (!T.active) toggleBacking(); break;
         case "t": if (!T.active) openTrainMenu(); break;
+        case "v": S.vibKey = true; break;
+        case "[": S.spaceT = clamp(S.spaceT - 0.1, 0, 1); break;
+        case "]": S.spaceT = clamp(S.spaceT + 0.1, 0, 1); break;
       }
   }
 });
-addEventListener("keyup", e => { if (e.code === "Space" || /^Digit[1-9]$/.test(e.code)) onRelease(); });
+addEventListener("keyup", e => {
+  if (e.code === "Space" || /^Digit[1-9]$/.test(e.code)) onRelease();
+  if (e.key.toLowerCase() === "v") S.vibKey = false;
+});
 </script>
 </body>
 </html>
